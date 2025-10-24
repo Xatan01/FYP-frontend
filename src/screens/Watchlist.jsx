@@ -13,6 +13,7 @@ import {
   moderateScale,
 } from "../styles/responsive";
 
+// Your original mock data
 const watchlist = [
   { symbol: "AAPL", name: "Apple Inc.", price: "$190.25", change: "+1.2%" },
   { symbol: "TSLA", name: "Tesla", price: "$252.70", change: "-0.8%" },
@@ -54,11 +55,12 @@ export default function Watchlist() {
   );
 }
 
+// Your original styles, with minor tweaks
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1 },
   header: {
-    fontSize: moderateScale(20),
+    fontSize: moderateScale(22),
     fontWeight: "bold",
     color: "#0f172a",
     marginBottom: verticalScale(12),
@@ -67,13 +69,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f8fafc", // Lighter background
     borderRadius: scale(16),
     padding: scale(16),
     marginBottom: verticalScale(10),
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   symbol: { fontSize: moderateScale(15), fontWeight: "600", color: "#0f172a" },
-  name: { fontSize: moderateScale(12), color: "#475569" },
+  name: { fontSize: moderateScale(12), color: "#475569", marginTop: 2 },
   right: { alignItems: "flex-end" },
   price: { fontSize: moderateScale(14), fontWeight: "600", color: "#0f172a" },
   change: { fontSize: moderateScale(12), fontWeight: "500" },

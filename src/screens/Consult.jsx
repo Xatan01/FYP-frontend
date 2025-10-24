@@ -14,6 +14,7 @@ import {
   moderateScale,
 } from "../styles/responsive";
 
+// Your original mock data
 const advisors = [
   {
     name: "Sarah Lee",
@@ -51,22 +52,25 @@ export default function Consult() {
   );
 }
 
+// Your original styles, with minor tweaks
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1 },
   header: {
-    fontSize: moderateScale(20),
+    fontSize: moderateScale(22),
     fontWeight: "bold",
     color: "#0f172a",
     marginBottom: verticalScale(12),
   },
   card: {
     flexDirection: "row",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f8fafc",
     borderRadius: scale(16),
     padding: scale(16),
     marginBottom: verticalScale(12),
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   avatar: {
     width: scale(56),
