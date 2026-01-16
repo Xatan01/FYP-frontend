@@ -16,9 +16,9 @@ import LottieView from "lottie-react-native";
 import { MessageCircle } from "lucide-react-native";
 
 // Free Lottie animation for the robot
-const LOTTIE_ROBOT = "https://lottie.host/1b98b9a2-67c4-406e-8e89-322141c2d0f3/fW13a22k1D.json";
+const LOTTIE_ROBOT =
+  "https://lottie.host/1b98b9a2-67c4-406e-8e89-322141c2d0f3/fW13a22k1D.json";
 
-// You can move this data inside the component
 const predictions = [
   { asset: "DBS Group Holdings", signal: "Bullish", confidence: 0.84 },
   { asset: "CapitaLand REIT", signal: "Neutral", confidence: 0.63 },
@@ -35,7 +35,6 @@ export default function AiInsights() {
       >
         <Text style={styles.header}>AI Robo-Advisor</Text>
 
-        {/* Mascot */}
         <LottieView
           source={{ uri: LOTTIE_ROBOT }}
           autoPlay
@@ -44,8 +43,8 @@ export default function AiInsights() {
         />
 
         <Text style={styles.introText}>
-          Hi! I'm <Text style={{ fontWeight: "bold", color: "#6b21a8" }}>FinBot</Text>. 
-          Here are some insights I've generated for you:
+          Hi! I'm <Text style={{ fontWeight: "bold", color: "#6b21a8" }}>FinBot</Text>
+          . Here are some insights I've generated for you:
         </Text>
 
         {predictions.map((p, i) => (
@@ -61,7 +60,7 @@ export default function AiInsights() {
                   : { color: "#d97706" },
               ]}
             >
-              {p.signal} • {Math.round(p.confidence * 100)}% confidence
+              {p.signal} - {Math.round(p.confidence * 100)}% confidence
             </Text>
           </View>
         ))}

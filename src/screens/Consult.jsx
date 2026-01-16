@@ -28,7 +28,7 @@ const advisors = [
   },
 ];
 
-export default function Consult() {
+export default function Consult({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -39,11 +39,17 @@ export default function Consult() {
         <Text style={styles.header}>Book a Consultation</Text>
 
         {advisors.map((a, i) => (
-          <TouchableOpacity key={i} style={styles.card}>
+          <TouchableOpacity key={i} style={styles.card} activeOpacity={0.8}>
             <Image source={{ uri: a.avatar }} style={styles.avatar} />
             <View style={styles.textContainer}>
               <Text style={styles.name}>{a.name}</Text>
               <Text style={styles.specialty}>{a.specialty}</Text>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => navigation.navigate("ChatConsult")}
+              >
+                <Text style={styles.chatText}>Chat</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         ))}
@@ -81,4 +87,17 @@ const styles = StyleSheet.create({
   textContainer: { flex: 1 },
   name: { fontSize: moderateScale(15), fontWeight: "600", color: "#0f172a" },
   specialty: { fontSize: moderateScale(12), color: "#475569", marginTop: 2 },
+  chatButton: {
+    marginTop: verticalScale(8),
+    alignSelf: "flex-start",
+    backgroundColor: "#2563eb",
+    borderRadius: scale(10),
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(12),
+  },
+  chatText: {
+    color: "#fff",
+    fontSize: moderateScale(12),
+    fontWeight: "600",
+  },
 });

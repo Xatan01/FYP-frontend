@@ -20,7 +20,7 @@ const watchlist = [
   { symbol: "DBS", name: "DBS Bank", price: "$35.40", change: "+0.4%" },
 ];
 
-export default function Watchlist() {
+export default function Watchlist({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -29,6 +29,20 @@ export default function Watchlist() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.header}>Your Watchlist</Text>
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#2563eb" }]}
+            onPress={() => navigation.navigate("Charting")}
+          >
+            <Text style={styles.actionText}>Open Charting</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#16a34a" }]}
+            onPress={() => navigation.navigate("MarketTrends")}
+          >
+            <Text style={styles.actionText}>Market Trends</Text>
+          </TouchableOpacity>
+        </View>
         {watchlist.map((s, i) => (
           <TouchableOpacity key={i} style={styles.card}>
             <View>
@@ -64,6 +78,22 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#0f172a",
     marginBottom: verticalScale(12),
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: scale(10),
+    marginBottom: verticalScale(12),
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: scale(12),
+    paddingVertical: verticalScale(10),
+    alignItems: "center",
+  },
+  actionText: {
+    color: "#fff",
+    fontSize: moderateScale(12),
+    fontWeight: "600",
   },
   card: {
     flexDirection: "row",

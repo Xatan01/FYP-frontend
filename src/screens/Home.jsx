@@ -9,7 +9,16 @@ import {
 } from "../styles/responsive";
 import PortfolioCard from "../components/PortfolioCard";
 import NewsCard from "../components/NewsCard";
-import { Shield, Star, Play, Brain, ArrowRight } from "lucide-react-native";
+import {
+  Shield,
+  Star,
+  Play,
+  Brain,
+  LineChart,
+  Newspaper,
+  NotebookPen,
+  Sparkles,
+} from "lucide-react-native";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -20,14 +29,22 @@ const LOTTIE_ROBOT = "https://lottie.host/1b98b9a2-67c4-406e-8e89-322141c2d0f3/f
 
 // AI-generated recommendation
 const aiRecommendation = {
-  title: "AI-Powered Challenge",
-  description: "Our AI notes you're watching REITs. Unlock the 'Advanced REITs' module to learn more!",
+  title: "AI Insights",
+  description: "See today's model signals for your watchlist and sector trends.",
   xp: 100,
-  action: "Learn", // This would navigate to the Learn tab
+  action: "AiInsights",
 };
 
 export default function Home({ userData, learningPath, navigation }) {
   const { width } = useWindowDimensions();
+
+  const quickActions = [
+    { label: "AI Insights", icon: Sparkles, route: "AiInsights", tone: "#f59e0b" },
+    { label: "Charting", icon: LineChart, route: "Charting", tone: "#2563eb" },
+    { label: "Trends", icon: Brain, route: "MarketTrends", tone: "#16a34a" },
+    { label: "Journal", icon: NotebookPen, route: "TradingJournal", tone: "#0ea5e9" },
+    { label: "News", icon: Newspaper, route: "News", tone: "#b45309" },
+  ];
 
   // Find the next lesson for the "Continue" button
   let nextLesson = null;
@@ -74,6 +91,22 @@ export default function Home({ userData, learningPath, navigation }) {
           </TouchableOpacity>
         </View>
 
+        <Text style={styles.sectionHeader}>Quick Actions</Text>
+        <View style={styles.quickGrid}>
+          {quickActions.map((action) => (
+            <TouchableOpacity
+              key={action.label}
+              style={styles.quickCard}
+              onPress={() => navigation.navigate(action.route)}
+            >
+              <View style={[styles.quickIcon, { backgroundColor: action.tone }]}>
+                <action.icon size={18} color="#fff" />
+              </View>
+              <Text style={styles.quickLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {/* --- Main Cards --- */}
         <View style={{ gap: verticalScale(16) }}>
           {/* --- Continue Learning Card --- */}
@@ -111,7 +144,7 @@ export default function Home({ userData, learningPath, navigation }) {
           </TouchableOpacity>
 
           <PortfolioCard />
-          <NewsCard />
+          <NewsCard onPress={() => navigation.navigate("News")} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -150,6 +183,40 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#334155",
     marginLeft: scale(4),
+  },
+  sectionHeader: {
+    fontSize: moderateScale(16),
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: verticalScale(10),
+  },
+  quickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: scale(12),
+    marginBottom: verticalScale(6),
+  },
+  quickCard: {
+    width: "30%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: scale(12),
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    alignItems: "center",
+  },
+  quickIcon: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: verticalScale(6),
+  },
+  quickLabel: {
+    fontSize: moderateScale(11),
+    fontWeight: "600",
+    color: "#0f172a",
   },
   learnCard: {
     borderRadius: 16,

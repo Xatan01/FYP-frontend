@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Newspaper } from "lucide-react-native";
 
 const news = [
@@ -6,9 +6,11 @@ const news = [
   { title: "REITs remain strong amid rates", source: "Straits Times", time: "5h ago" },
 ];
 
-export default function NewsCard() {
+export default function NewsCard({ onPress }) {
+  const Wrapper = onPress ? TouchableOpacity : View;
+
   return (
-    <View style={styles.card}>
+    <Wrapper style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <Text style={styles.header}>Latest Financial News</Text>
       {news.map((n) => (
         <View key={n.title} style={styles.newsRow}>
@@ -16,12 +18,16 @@ export default function NewsCard() {
             <Newspaper size={16} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={2}>{n.title}</Text>
-            <Text style={styles.meta}>{n.source} • {n.time}</Text>
+            <Text style={styles.title} numberOfLines={2}>
+              {n.title}
+            </Text>
+            <Text style={styles.meta}>
+              {n.source} - {n.time}
+            </Text>
           </View>
         </View>
       ))}
-    </View>
+    </Wrapper>
   );
 }
 
