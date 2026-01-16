@@ -3,12 +3,17 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import TabNavigator from "./TabNavigator";
 import Login from "../screens/Login";
 import Register from "../screens/Register";
+import PasswordReset from "../screens/PasswordReset";
 import AiInsights from "../screens/AiInsights";
 import News from "../screens/News";
 import Charting from "../screens/Charting";
 import TradingJournal from "../screens/TradingJournal";
 import MarketTrends from "../screens/MarketTrends";
 import ChatConsult from "../screens/ChatConsult";
+import ConsultationBooking from "../screens/ConsultationBooking";
+import Community from "../screens/Community";
+import AlertsSettings from "../screens/AlertsSettings";
+import Portfolio from "../screens/Portfolio";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +22,7 @@ export default function RootNavigator({ userData, learningPath, onCompleteLesson
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
+      <Stack.Screen name="PasswordReset" component={PasswordReset} />
       <Stack.Screen name="MainTabs">
         {(props) => (
           <TabNavigator
@@ -33,6 +39,10 @@ export default function RootNavigator({ userData, learningPath, onCompleteLesson
       <Stack.Screen name="TradingJournal" component={TradingJournal} />
       <Stack.Screen name="MarketTrends" component={MarketTrends} />
       <Stack.Screen name="ChatConsult" component={ChatConsult} />
+      <Stack.Screen name="ConsultationBooking" component={ConsultationBooking} />
+      <Stack.Screen name="Community" component={Community} />
+      <Stack.Screen name="AlertsSettings" component={AlertsSettings} />
+      <Stack.Screen name="Portfolio" component={Portfolio} />
     </Stack.Navigator>
   );
 }

@@ -44,12 +44,20 @@ export default function Consult({ navigation }) {
             <View style={styles.textContainer}>
               <Text style={styles.name}>{a.name}</Text>
               <Text style={styles.specialty}>{a.specialty}</Text>
-              <TouchableOpacity
-                style={styles.chatButton}
-                onPress={() => navigation.navigate("ChatConsult")}
-              >
-                <Text style={styles.chatText}>Chat</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.chatButton}
+                  onPress={() => navigation.navigate("ChatConsult")}
+                >
+                  <Text style={styles.chatText}>Chat</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.bookButton}
+                  onPress={() => navigation.navigate("ConsultationBooking")}
+                >
+                  <Text style={styles.bookText}>Book</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableOpacity>
         ))}
@@ -87,8 +95,12 @@ const styles = StyleSheet.create({
   textContainer: { flex: 1 },
   name: { fontSize: moderateScale(15), fontWeight: "600", color: "#0f172a" },
   specialty: { fontSize: moderateScale(12), color: "#475569", marginTop: 2 },
-  chatButton: {
+  buttonRow: {
+    flexDirection: "row",
+    gap: scale(8),
     marginTop: verticalScale(8),
+  },
+  chatButton: {
     alignSelf: "flex-start",
     backgroundColor: "#2563eb",
     borderRadius: scale(10),
@@ -96,6 +108,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
   },
   chatText: {
+    color: "#fff",
+    fontSize: moderateScale(12),
+    fontWeight: "600",
+  },
+  bookButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#16a34a",
+    borderRadius: scale(10),
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(12),
+  },
+  bookText: {
     color: "#fff",
     fontSize: moderateScale(12),
     fontWeight: "600",

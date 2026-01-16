@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
+  Switch,
 } from "react-native";
 import {
   scale,
@@ -14,13 +16,41 @@ import {
 } from "../styles/responsive";
 
 // Your original mock data
-const watchlist = [
-  { symbol: "AAPL", name: "Apple Inc.", price: "$190.25", change: "+1.2%" },
-  { symbol: "TSLA", name: "Tesla", price: "$252.70", change: "-0.8%" },
-  { symbol: "DBS", name: "DBS Bank", price: "$35.40", change: "+0.4%" },
+const initialWatchlist = [
+  { id: "AAPL", symbol: "AAPL", name: "Apple Inc.", price: "$190.25", change: "+1.2%", alert: true },
+  { id: "TSLA", symbol: "TSLA", name: "Tesla", price: "$252.70", change: "-0.8%", alert: false },
+  { id: "DBS", symbol: "DBS", name: "DBS Bank", price: "$35.40", change: "+0.4%", alert: true },
 ];
 
 export default function Watchlist({ navigation }) {
+  const [watchlist, setWatchlist] = useState(initialWatchlist);
+  const [symbol, setSymbol] = useState("");
+  const [name, setName] = useState("");
+
+  const handleAdd = () => {
+    if (!symbol.trim() || !name.trim()) return;
+    const id = symbol.trim().toUpperCase();
+    if (watchlist.some((item) => item.id === id)) return;
+    setWatchlist([
+      { id, symbol: id, name: name.trim(), price: "$0.00", change: "+0.0%", alert: false },
+      ...watchlist,
+    ]);
+    setSymbol("");
+    setName("");
+  };
+
+  const handleRemove = (id) => {
+    setWatchlist(watchlist.filter((item) => item.id !== id));
+  };
+
+  const toggleAlert = (id) => {
+    setWatchlist(
+      watchlist.map((item) =>
+        item.id === id ? { ...item, alert: !item.alert } : item
+      )
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -43,8 +73,28 @@ export default function Watchlist({ navigation }) {
             <Text style={styles.actionText}>Market Trends</Text>
           </TouchableOpacity>
         </View>
-        {watchlist.map((s, i) => (
-          <TouchableOpacity key={i} style={styles.card}>
+        <View style={styles.addCard}>
+          <TextInput
+            style={styles.addInput}
+            placeholder="Symbol"
+            placeholderTextColor="#94a3b8"
+            value={symbol}
+            onChangeText={setSymbol}
+            autoCapitalize="characters"
+          />
+          <TextInput
+            style={styles.addInput}
+            placeholder="Company name"
+            placeholderTextColor="#94a3b8"
+            value={name}
+            onChangeText={setName}
+          />
+          <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
+            <Text style={styles.addButtonText}>Add to Watchlist</Text>
+          </TouchableOpacity>
+        </View>
+        {watchlist.map((s) => (
+          <TouchableOpacity key={s.id} style={styles.card}>
             <View>
               <Text style={styles.symbol}>{s.symbol}</Text>
               <Text style={styles.name}>{s.name}</Text>
@@ -61,6 +111,19 @@ export default function Watchlist({ navigation }) {
               >
                 {s.change}
               </Text>
+              <View style={styles.alertRow}>
+                <Text style={styles.alertLabel}>Alert</Text>
+                <Switch
+                  value={s.alert}
+                  onValueChange={() => toggleAlert(s.id)}
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => handleRemove(s.id)}
+              >
+                <Text style={styles.removeText}>Remove</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         ))}
@@ -95,6 +158,36 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
     fontWeight: "600",
   },
+  addCard: {
+    backgroundColor: "#f8fafc",
+    borderRadius: scale(16),
+    padding: scale(12),
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    marginBottom: verticalScale(12),
+  },
+  addInput: {
+    backgroundColor: "#fff",
+    borderRadius: scale(12),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(10),
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    marginBottom: verticalScale(8),
+    fontSize: moderateScale(12),
+    color: "#0f172a",
+  },
+  addButton: {
+    backgroundColor: "#2563eb",
+    borderRadius: scale(12),
+    paddingVertical: verticalScale(10),
+    alignItems: "center",
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: moderateScale(12),
+    fontWeight: "600",
+  },
   card: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -111,4 +204,19 @@ const styles = StyleSheet.create({
   right: { alignItems: "flex-end" },
   price: { fontSize: moderateScale(14), fontWeight: "600", color: "#0f172a" },
   change: { fontSize: moderateScale(12), fontWeight: "500" },
+  alertRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(6),
+    marginTop: verticalScale(6),
+  },
+  alertLabel: { fontSize: moderateScale(11), color: "#64748b" },
+  removeButton: {
+    marginTop: verticalScale(6),
+    backgroundColor: "#fee2e2",
+    borderRadius: scale(8),
+    paddingVertical: verticalScale(4),
+    paddingHorizontal: scale(8),
+  },
+  removeText: { color: "#dc2626", fontSize: moderateScale(11), fontWeight: "600" },
 });

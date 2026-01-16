@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -14,6 +14,29 @@ import { scale, verticalScale, moderateScale } from "../styles/responsive";
 export default function Login({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const canSubmit = useMemo(
+    () => /\S+@\S+\.\S+/.test(email) && password.trim().length > 0,
+    [email, password]
+  );
+
+  const handleLogin = () => {
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Password is required.");
+      return;
+    }
+    setError("");
+    navigation.replace("MainTabs");
+  };
+
+  const handleGoogle = () => {
+    setError("Google sign-in needs backend setup.");
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -46,19 +69,27 @@ export default function Login({ navigation }) {
         </View>
 
         <TouchableOpacity style={styles.forgot}>
-          <Text style={styles.forgotText}>Forgot password?</Text>
+          <Text
+            style={styles.forgotText}
+            onPress={() => navigation.navigate("PasswordReset")}
+          >
+            Forgot password?
+          </Text>
         </TouchableOpacity>
 
+        {!!error && <Text style={styles.error}>{error}</Text>}
+
         <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.replace("MainTabs")}
+          style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
+          onPress={handleLogin}
+          disabled={!canSubmit}
         >
           <LinearGradient colors={["#2563eb", "#1d4ed8"]} style={styles.primaryFill}>
             <Text style={styles.primaryText}>Sign In</Text>
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.googleButton}>
+        <TouchableOpacity style={styles.googleButton} onPress={handleGoogle}>
           <Text style={styles.googleText}>Continue with Google</Text>
         </TouchableOpacity>
 
@@ -113,9 +144,17 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(16),
   },
   forgotText: { color: "#2563eb", fontSize: moderateScale(12) },
+  error: {
+    color: "#dc2626",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(10),
+  },
   primaryButton: {
     borderRadius: 16,
     overflow: "hidden",
+  },
+  primaryButtonDisabled: {
+    opacity: 0.6,
   },
   primaryFill: {
     paddingVertical: verticalScale(12),

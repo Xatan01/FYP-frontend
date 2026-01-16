@@ -18,6 +18,9 @@ import {
   Newspaper,
   NotebookPen,
   Sparkles,
+  Users,
+  Bell,
+  PieChart,
 } from "lucide-react-native";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,6 +47,9 @@ export default function Home({ userData, learningPath, navigation }) {
     { label: "Trends", icon: Brain, route: "MarketTrends", tone: "#16a34a" },
     { label: "Journal", icon: NotebookPen, route: "TradingJournal", tone: "#0ea5e9" },
     { label: "News", icon: Newspaper, route: "News", tone: "#b45309" },
+    { label: "Portfolio", icon: PieChart, route: "Portfolio", tone: "#6366f1" },
+    { label: "Alerts", icon: Bell, route: "AlertsSettings", tone: "#ef4444" },
+    { label: "Community", icon: Users, route: "Community", tone: "#8b5cf6" },
   ];
 
   // Find the next lesson for the "Continue" button
@@ -197,7 +203,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(6),
   },
   quickCard: {
-    width: "30%",
+    width: "48%",
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: scale(12),

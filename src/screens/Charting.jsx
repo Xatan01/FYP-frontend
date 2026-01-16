@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -11,10 +11,21 @@ import { LineChart, TrendingUp } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 
 const ranges = ["1D", "1W", "1M", "1Y"];
+const indicators = ["MA(20)", "RSI", "MACD", "Volume"];
 const chartPoints = [18, 22, 16, 28, 24, 30, 26, 34, 29, 36];
 
 export default function Charting() {
+  const [range, setRange] = useState(ranges[1]);
+  const [activeIndicators, setActiveIndicators] = useState(["MA(20)", "Volume"]);
   const maxValue = Math.max(...chartPoints);
+
+  const toggleIndicator = (label) => {
+    if (activeIndicators.includes(label)) {
+      setActiveIndicators(activeIndicators.filter((item) => item !== label));
+      return;
+    }
+    setActiveIndicators([...activeIndicators, label]);
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -40,11 +51,20 @@ export default function Charting() {
           </View>
 
           <View style={styles.rangeRow}>
-            {ranges.map((r) => (
-              <TouchableOpacity key={r} style={styles.rangeButton}>
-                <Text style={styles.rangeText}>{r}</Text>
-              </TouchableOpacity>
-            ))}
+            {ranges.map((r) => {
+              const active = r === range;
+              return (
+                <TouchableOpacity
+                  key={r}
+                  style={styles.rangeButton}
+                  onPress={() => setRange(r)}
+                >
+                  <Text style={[styles.rangeText, active && styles.rangeTextActive]}>
+                    {r}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <View style={styles.chartArea}>
@@ -64,10 +84,25 @@ export default function Charting() {
         <View style={styles.secondaryCard}>
           <Text style={styles.secondaryHeader}>Indicators</Text>
           <View style={styles.indicatorRow}>
-            <Text style={styles.indicator}>MA (20)</Text>
-            <Text style={styles.indicator}>RSI (14)</Text>
-            <Text style={styles.indicator}>MACD</Text>
-            <Text style={styles.indicator}>Volume</Text>
+            {indicators.map((indicator) => {
+              const active = activeIndicators.includes(indicator);
+              return (
+                <TouchableOpacity
+                  key={indicator}
+                  style={[styles.indicator, active && styles.indicatorActive]}
+                  onPress={() => toggleIndicator(indicator)}
+                >
+                  <Text
+                    style={[
+                      styles.indicatorText,
+                      active && styles.indicatorTextActive,
+                    ]}
+                  >
+                    {indicator}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -129,6 +164,7 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   rangeText: { fontSize: moderateScale(12), color: "#475569", fontWeight: "600" },
+  rangeTextActive: { color: "#2563eb" },
   chartArea: {
     height: verticalScale(160),
     flexDirection: "row",
@@ -161,8 +197,14 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(6),
     backgroundColor: "#f1f5f9",
     borderRadius: 10,
+  },
+  indicatorActive: {
+    backgroundColor: "#2563eb",
+  },
+  indicatorText: {
     fontSize: moderateScale(12),
     color: "#334155",
     fontWeight: "600",
   },
+  indicatorTextActive: { color: "#fff" },
 });

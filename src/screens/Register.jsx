@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -16,6 +16,46 @@ export default function Register({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+
+  const existingUsers = ["alex", "divya", "xavier"];
+  const isEmailValid = /\S+@\S+\.\S+/.test(email);
+  const isPasswordStrong =
+    password.length >= 8 && /[A-Z]/.test(password) && /[^A-Za-z0-9]/.test(password);
+
+  const canSubmit = useMemo(
+    () =>
+      name.trim().length > 0 &&
+      isEmailValid &&
+      isPasswordStrong &&
+      confirm === password,
+    [name, isEmailValid, isPasswordStrong, confirm, password]
+  );
+
+  const handleRegister = () => {
+    if (!name.trim()) {
+      setError("Username is required.");
+      return;
+    }
+    if (existingUsers.includes(name.trim().toLowerCase())) {
+      setError("Username is already taken.");
+      return;
+    }
+    if (!isEmailValid) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (!isPasswordStrong) {
+      setError("Password needs 8+ chars, 1 uppercase, 1 special.");
+      return;
+    }
+    if (confirm !== password) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setError("");
+    navigation.replace("MainTabs");
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -68,9 +108,12 @@ export default function Register({ navigation }) {
           />
         </View>
 
+        {!!error && <Text style={styles.error}>{error}</Text>}
+
         <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.replace("MainTabs")}
+          style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
+          onPress={handleRegister}
+          disabled={!canSubmit}
         >
           <LinearGradient colors={["#16a34a", "#15803d"]} style={styles.primaryFill}>
             <Text style={styles.primaryText}>Register</Text>
@@ -123,10 +166,18 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     color: "#0f172a",
   },
+  error: {
+    color: "#dc2626",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(10),
+  },
   primaryButton: {
     borderRadius: 16,
     overflow: "hidden",
     marginTop: verticalScale(6),
+  },
+  primaryButtonDisabled: {
+    opacity: 0.6,
   },
   primaryFill: {
     paddingVertical: verticalScale(12),
