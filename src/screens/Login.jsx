@@ -11,7 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Mail, Lock } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 
-export default function Login({ navigation }) {
+export default function Login({ navigation, onAuthChange }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -31,7 +31,7 @@ export default function Login({ navigation }) {
       return;
     }
     setError("");
-    navigation.replace("MainTabs");
+    onAuthChange?.(true);
   };
 
   const handleGoogle = () => {

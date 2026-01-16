@@ -7,9 +7,11 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { MessageSquareText, Plus } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import usePersistedState from "../hooks/usePersistedState";
 
 const starterPosts = [
   {
@@ -29,7 +31,12 @@ const starterPosts = [
 ];
 
 export default function Community() {
-  const [posts, setPosts] = useState(starterPosts);
+  const {
+    value: posts,
+    setValue: setPosts,
+    loading,
+    error,
+  } = usePersistedState("communityPosts", starterPosts);
   const [newPost, setNewPost] = useState("");
 
   const handleAddPost = () => {
@@ -47,38 +54,49 @@ export default function Community() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ padding: scale(16) }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.header}>Community Forum</Text>
-        <View style={styles.newPost}>
-          <TextInput
-            style={styles.input}
-            placeholder="Share a thought or ask a question"
-            placeholderTextColor="#94a3b8"
-            value={newPost}
-            onChangeText={setNewPost}
-          />
-          <TouchableOpacity style={styles.postButton} onPress={handleAddPost}>
-            <Plus size={16} color="#fff" />
-            <Text style={styles.postText}>Post</Text>
-          </TouchableOpacity>
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Loading community...</Text>
         </View>
-
-        {posts.map((post) => (
-          <View key={post.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <MessageSquareText size={16} color="#2563eb" />
-              <Text style={styles.author}>{post.author}</Text>
-              <Text style={styles.topic}>{post.topic}</Text>
-              <Text style={styles.replies}>{post.replies} replies</Text>
-            </View>
-            <Text style={styles.body}>{post.text}</Text>
+      ) : (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ padding: scale(16) }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.header}>Community Forum</Text>
+          {!!error && <Text style={styles.error}>{error}</Text>}
+          <View style={styles.newPost}>
+            <TextInput
+              style={styles.input}
+              placeholder="Share a thought or ask a question"
+              placeholderTextColor="#94a3b8"
+              value={newPost}
+              onChangeText={setNewPost}
+            />
+            <TouchableOpacity style={styles.postButton} onPress={handleAddPost}>
+              <Plus size={16} color="#fff" />
+              <Text style={styles.postText}>Post</Text>
+            </TouchableOpacity>
           </View>
-        ))}
-      </ScrollView>
+
+          {posts.map((post) => (
+            <View key={post.id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <MessageSquareText size={16} color="#2563eb" />
+                <Text style={styles.author}>{post.author}</Text>
+                <Text style={styles.topic}>{post.topic}</Text>
+                <Text style={styles.replies}>{post.replies} replies</Text>
+              </View>
+              <Text style={styles.body}>{post.text}</Text>
+            </View>
+          ))}
+          {posts.length === 0 && (
+            <Text style={styles.emptyState}>No posts yet. Start a thread.</Text>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -86,11 +104,23 @@ export default function Community() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1 },
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(8),
+  },
+  loadingText: { color: "#64748b", fontSize: moderateScale(12) },
   header: {
     fontSize: moderateScale(22),
     fontWeight: "bold",
     color: "#0f172a",
     marginBottom: verticalScale(12),
+  },
+  error: {
+    color: "#dc2626",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(10),
   },
   newPost: {
     backgroundColor: "#f8fafc",
@@ -142,4 +172,10 @@ const styles = StyleSheet.create({
   },
   replies: { marginLeft: "auto", fontSize: moderateScale(11), color: "#64748b" },
   body: { fontSize: moderateScale(13), color: "#334155" },
+  emptyState: {
+    textAlign: "center",
+    color: "#94a3b8",
+    fontSize: moderateScale(12),
+    marginTop: verticalScale(12),
+  },
 });

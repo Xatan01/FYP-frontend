@@ -18,7 +18,12 @@ import Profile from "../screens/Profile";   // A new screen
 
 const Tab = createBottomTabNavigator();
 
-export default function TabNavigator({ userData, learningPath, onCompleteLesson }) {
+export default function TabNavigator({
+  userData,
+  learningPath,
+  onCompleteLesson,
+  onAuthChange,
+}) {
   // Check if there's a new lesson to show a badge
   const hasNewLesson = learningPath.some((unit) =>
     unit.lessons.some((l) => l.status === "unlocked")
@@ -92,7 +97,7 @@ export default function TabNavigator({ userData, learningPath, onCompleteLesson 
         }}
       >
         {/* The hub for badges, progress, and leagues */}
-        {(props) => <Profile {...props} userData={userData} />}
+        {(props) => <Profile {...props} userData={userData} onAuthChange={onAuthChange} />}
       </Tab.Screen>
     </Tab.Navigator>
   );

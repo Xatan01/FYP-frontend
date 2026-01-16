@@ -11,7 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { User, Mail, Lock } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 
-export default function Register({ navigation }) {
+export default function Register({ navigation, onAuthChange }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,7 +54,7 @@ export default function Register({ navigation }) {
       return;
     }
     setError("");
-    navigation.replace("MainTabs");
+    onAuthChange?.(true);
   };
 
   return (

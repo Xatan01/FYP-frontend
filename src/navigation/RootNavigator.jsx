@@ -17,32 +17,50 @@ import Portfolio from "../screens/Portfolio";
 
 const Stack = createNativeStackNavigator();
 
-export default function RootNavigator({ userData, learningPath, onCompleteLesson }) {
+export default function RootNavigator({
+  userData,
+  learningPath,
+  onCompleteLesson,
+  isAuthed,
+  onAuthChange,
+}) {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
-      <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Register" component={Register} />
-      <Stack.Screen name="PasswordReset" component={PasswordReset} />
-      <Stack.Screen name="MainTabs">
-        {(props) => (
-          <TabNavigator
-            {...props}
-            userData={userData}
-            learningPath={learningPath}
-            onCompleteLesson={onCompleteLesson}
-          />
-        )}
-      </Stack.Screen>
-      <Stack.Screen name="AiInsights" component={AiInsights} />
-      <Stack.Screen name="News" component={News} />
-      <Stack.Screen name="Charting" component={Charting} />
-      <Stack.Screen name="TradingJournal" component={TradingJournal} />
-      <Stack.Screen name="MarketTrends" component={MarketTrends} />
-      <Stack.Screen name="ChatConsult" component={ChatConsult} />
-      <Stack.Screen name="ConsultationBooking" component={ConsultationBooking} />
-      <Stack.Screen name="Community" component={Community} />
-      <Stack.Screen name="AlertsSettings" component={AlertsSettings} />
-      <Stack.Screen name="Portfolio" component={Portfolio} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {isAuthed ? (
+        <>
+          <Stack.Screen name="MainTabs">
+            {(props) => (
+              <TabNavigator
+                {...props}
+                userData={userData}
+                learningPath={learningPath}
+                onCompleteLesson={onCompleteLesson}
+                onAuthChange={onAuthChange}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="AiInsights" component={AiInsights} />
+          <Stack.Screen name="News" component={News} />
+          <Stack.Screen name="Charting" component={Charting} />
+          <Stack.Screen name="TradingJournal" component={TradingJournal} />
+          <Stack.Screen name="MarketTrends" component={MarketTrends} />
+          <Stack.Screen name="ChatConsult" component={ChatConsult} />
+          <Stack.Screen name="ConsultationBooking" component={ConsultationBooking} />
+          <Stack.Screen name="Community" component={Community} />
+          <Stack.Screen name="AlertsSettings" component={AlertsSettings} />
+          <Stack.Screen name="Portfolio" component={Portfolio} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Login">
+            {(props) => <Login {...props} onAuthChange={onAuthChange} />}
+          </Stack.Screen>
+          <Stack.Screen name="Register">
+            {(props) => <Register {...props} onAuthChange={onAuthChange} />}
+          </Stack.Screen>
+          <Stack.Screen name="PasswordReset" component={PasswordReset} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }

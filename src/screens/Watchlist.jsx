@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   Switch,
+  ActivityIndicator,
 } from "react-native";
 import {
   scale,
   verticalScale,
   moderateScale,
 } from "../styles/responsive";
+import usePersistedState from "../hooks/usePersistedState";
 
 // Your original mock data
 const initialWatchlist = [
@@ -23,7 +25,12 @@ const initialWatchlist = [
 ];
 
 export default function Watchlist({ navigation }) {
-  const [watchlist, setWatchlist] = useState(initialWatchlist);
+  const {
+    value: watchlist,
+    setValue: setWatchlist,
+    loading,
+    error,
+  } = usePersistedState("watchlist", initialWatchlist);
   const [symbol, setSymbol] = useState("");
   const [name, setName] = useState("");
 
@@ -53,12 +60,19 @@ export default function Watchlist({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Loading watchlist...</Text>
+        </View>
+      ) : (
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ padding: scale(16) }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.header}>Your Watchlist</Text>
+        {!!error && <Text style={styles.error}>{error}</Text>}
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: "#2563eb" }]}
@@ -127,7 +141,11 @@ export default function Watchlist({ navigation }) {
             </View>
           </TouchableOpacity>
         ))}
+        {watchlist.length === 0 && (
+          <Text style={styles.emptyState}>No symbols yet. Add one above.</Text>
+        )}
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -136,11 +154,23 @@ export default function Watchlist({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1 },
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(8),
+  },
+  loadingText: { color: "#64748b", fontSize: moderateScale(12) },
   header: {
     fontSize: moderateScale(22),
     fontWeight: "bold",
     color: "#0f172a",
     marginBottom: verticalScale(12),
+  },
+  error: {
+    color: "#dc2626",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(8),
   },
   actionRow: {
     flexDirection: "row",
@@ -219,4 +249,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
   },
   removeText: { color: "#dc2626", fontSize: moderateScale(11), fontWeight: "600" },
+  emptyState: {
+    textAlign: "center",
+    color: "#94a3b8",
+    fontSize: moderateScale(12),
+    marginTop: verticalScale(12),
+  },
 });

@@ -49,7 +49,7 @@ const leaderboard = [
   { id: 4, name: "Sarah K.", xp: 3210, avatar: "https://placehold.co/100x100/16a34a/ffffff?text=SK" },
 ];
 
-export default function Profile({ userData, navigation }) {
+export default function Profile({ userData, onAuthChange }) {
   const myUser = leaderboard.find((u) => u.name.includes("You"));
   
   return (
@@ -66,20 +66,12 @@ export default function Profile({ userData, navigation }) {
         <Text style={styles.name}>{userData.name}</Text>
         <Text style={styles.joined}>Joined December 2024</Text>
 
-        <View style={styles.authRow}>
-          <TouchableOpacity
-            style={[styles.authButton, { backgroundColor: "#2563eb" }]}
-            onPress={() => navigation.navigate("Login")}
-          >
-            <Text style={styles.authText}>Sign In</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.authButton, { backgroundColor: "#16a34a" }]}
-            onPress={() => navigation.navigate("Register")}
-          >
-            <Text style={styles.authText}>Register</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={() => onAuthChange?.(false)}
+        >
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
@@ -198,20 +190,16 @@ const styles = StyleSheet.create({
     color: "#64748b",
     marginBottom: verticalScale(20),
   },
-  authRow: {
-    flexDirection: "row",
-    gap: scale(10),
+  signOutButton: {
     width: "100%",
-    marginBottom: verticalScale(18),
-  },
-  authButton: {
-    flex: 1,
     borderRadius: 12,
     paddingVertical: verticalScale(10),
     alignItems: "center",
+    backgroundColor: "#fee2e2",
+    marginBottom: verticalScale(18),
   },
-  authText: {
-    color: "#fff",
+  signOutText: {
+    color: "#dc2626",
     fontSize: moderateScale(12),
     fontWeight: "600",
   },

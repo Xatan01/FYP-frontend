@@ -7,9 +7,11 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { NotebookPen, Plus } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import usePersistedState from "../hooks/usePersistedState";
 
 const initialEntries = [
   {
@@ -36,7 +38,12 @@ const initialEntries = [
 ];
 
 export default function TradingJournal() {
-  const [entries, setEntries] = useState(initialEntries);
+  const {
+    value: entries,
+    setValue: setEntries,
+    loading,
+    error,
+  } = usePersistedState("tradingJournal", initialEntries);
   const [symbol, setSymbol] = useState("");
   const [date, setDate] = useState("");
   const [pnl, setPnl] = useState("");
@@ -89,20 +96,28 @@ export default function TradingJournal() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ padding: scale(16) }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.headerRow}>
-          <Text style={styles.header}>Trading Journal</Text>
-          <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
-            <Plus size={16} color="#fff" />
-            <Text style={styles.addText}>
-              {editingId ? "Save Entry" : "Add Entry"}
-            </Text>
-          </TouchableOpacity>
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Loading journal...</Text>
         </View>
+      ) : (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ padding: scale(16) }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerRow}>
+            <Text style={styles.header}>Trading Journal</Text>
+            <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
+              <Plus size={16} color="#fff" />
+              <Text style={styles.addText}>
+                {editingId ? "Save Entry" : "Add Entry"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {!!error && <Text style={styles.error}>{error}</Text>}
 
         <View style={styles.formCard}>
           <View style={styles.formRow}>
@@ -191,7 +206,11 @@ export default function TradingJournal() {
             </View>
           </View>
         ))}
+        {entries.length === 0 && (
+          <Text style={styles.emptyState}>No journal entries yet.</Text>
+        )}
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -199,6 +218,13 @@ export default function TradingJournal() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1 },
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(8),
+  },
+  loadingText: { color: "#64748b", fontSize: moderateScale(12) },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -209,6 +235,11 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(22),
     fontWeight: "bold",
     color: "#0f172a",
+  },
+  error: {
+    color: "#dc2626",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(8),
   },
   addButton: {
     flexDirection: "row",
@@ -299,4 +330,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   deleteText: { color: "#dc2626", fontSize: moderateScale(11), fontWeight: "600" },
+  emptyState: {
+    textAlign: "center",
+    color: "#94a3b8",
+    fontSize: moderateScale(12),
+    marginTop: verticalScale(12),
+  },
 });

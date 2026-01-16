@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { LineChart, TrendingUp } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
@@ -17,6 +18,8 @@ const chartPoints = [18, 22, 16, 28, 24, 30, 26, 34, 29, 36];
 export default function Charting() {
   const [range, setRange] = useState(ranges[1]);
   const [activeIndicators, setActiveIndicators] = useState(["MA(20)", "Volume"]);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState("Just now");
   const maxValue = Math.max(...chartPoints);
 
   const toggleIndicator = (label) => {
@@ -25,6 +28,14 @@ export default function Charting() {
       return;
     }
     setActiveIndicators([...activeIndicators, label]);
+  };
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLastUpdated("Just now");
+      setLoading(false);
+    }, 600);
   };
 
   return (
@@ -36,50 +47,65 @@ export default function Charting() {
       >
         <View style={styles.headerRow}>
           <Text style={styles.header}>Charting Tools</Text>
-          <View style={styles.badge}>
-            <TrendingUp size={14} color="#16a34a" />
-            <Text style={styles.badgeText}>Realtime</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+              <Text style={styles.refreshText}>Refresh</Text>
+            </TouchableOpacity>
+            <View style={styles.badge}>
+              <TrendingUp size={14} color="#16a34a" />
+              <Text style={styles.badgeText}>Realtime</Text>
+            </View>
           </View>
         </View>
+        <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
 
-        <View style={styles.card}>
-          <View style={styles.symbolRow}>
-            <LineChart size={18} color="#2563eb" />
-            <Text style={styles.symbol}>DBS</Text>
-            <Text style={styles.price}>$35.40</Text>
-            <Text style={styles.change}>+1.2%</Text>
+        {loading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color="#2563eb" />
+            <Text style={styles.loadingText}>Refreshing chart...</Text>
           </View>
+        ) : (
+          <View style={styles.card}>
+            <View style={styles.symbolRow}>
+              <LineChart size={18} color="#2563eb" />
+              <Text style={styles.symbol}>DBS</Text>
+              <Text style={styles.price}>$35.40</Text>
+              <Text style={styles.change}>+1.2%</Text>
+            </View>
 
-          <View style={styles.rangeRow}>
-            {ranges.map((r) => {
-              const active = r === range;
-              return (
-                <TouchableOpacity
-                  key={r}
-                  style={styles.rangeButton}
-                  onPress={() => setRange(r)}
-                >
-                  <Text style={[styles.rangeText, active && styles.rangeTextActive]}>
-                    {r}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+            <View style={styles.rangeRow}>
+              {ranges.map((r) => {
+                const active = r === range;
+                return (
+                  <TouchableOpacity
+                    key={r}
+                    style={styles.rangeButton}
+                    onPress={() => setRange(r)}
+                  >
+                    <Text
+                      style={[styles.rangeText, active && styles.rangeTextActive]}
+                    >
+                      {r}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-          <View style={styles.chartArea}>
-            {chartPoints.map((value, index) => (
-              <View key={`${value}-${index}`} style={styles.barWrap}>
-                <View
-                  style={[
-                    styles.bar,
-                    { height: `${(value / maxValue) * 100}%` },
-                  ]}
-                />
-              </View>
-            ))}
+            <View style={styles.chartArea}>
+              {chartPoints.map((value, index) => (
+                <View key={`${value}-${index}`} style={styles.barWrap}>
+                  <View
+                    style={[
+                      styles.bar,
+                      { height: `${(value / maxValue) * 100}%` },
+                    ]}
+                  />
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.secondaryCard}>
           <Text style={styles.secondaryHeader}>Indicators</Text>
@@ -119,11 +145,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: verticalScale(12),
   },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: scale(8) },
   header: {
     fontSize: moderateScale(22),
     fontWeight: "bold",
     color: "#0f172a",
   },
+  refreshButton: {
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
+    borderRadius: 999,
+  },
+  refreshText: { color: "#2563eb", fontSize: moderateScale(11), fontWeight: "600" },
   badge: {
     flexDirection: "row",
     alignItems: "center",
@@ -134,6 +168,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   badgeText: { color: "#16a34a", fontSize: moderateScale(12), fontWeight: "600" },
+  updatedText: {
+    alignSelf: "flex-start",
+    fontSize: moderateScale(11),
+    color: "#64748b",
+    marginBottom: verticalScale(10),
+  },
   card: {
     backgroundColor: "#f8fafc",
     borderRadius: 16,
@@ -207,4 +247,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   indicatorTextActive: { color: "#fff" },
+  loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
+  loadingText: { color: "#2563eb", fontSize: moderateScale(12) },
 });

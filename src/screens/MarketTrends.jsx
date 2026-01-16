@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
   View,
   Text,
   StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Activity } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
@@ -25,6 +27,17 @@ const signals = [
 ];
 
 export default function MarketTrends() {
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState("Just now");
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLastUpdated("Just now");
+      setLoading(false);
+    }, 600);
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -34,31 +47,46 @@ export default function MarketTrends() {
       >
         <View style={styles.headerRow}>
           <Text style={styles.header}>Personalized Market Trends</Text>
-          <View style={styles.pill}>
-            <Activity size={14} color="#2563eb" />
-            <Text style={styles.pillText}>Daily</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+              <Text style={styles.refreshText}>Refresh</Text>
+            </TouchableOpacity>
+            <View style={styles.pill}>
+              <Activity size={14} color="#2563eb" />
+              <Text style={styles.pillText}>Daily</Text>
+            </View>
           </View>
         </View>
+        <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
 
-        <View style={styles.signalCard}>
-          {signals.map((item) => (
-            <View key={item.label} style={styles.signalItem}>
-              <Text style={styles.signalLabel}>{item.label}</Text>
-              <Text style={styles.signalValue}>{item.value}</Text>
+        {loading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color="#2563eb" />
+            <Text style={styles.loadingText}>Refreshing trends...</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.signalCard}>
+              {signals.map((item) => (
+                <View key={item.label} style={styles.signalItem}>
+                  <Text style={styles.signalLabel}>{item.label}</Text>
+                  <Text style={styles.signalValue}>{item.value}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
 
-        <Text style={styles.sectionHeader}>Sector Heatmap</Text>
-        <View style={styles.grid}>
-          {sectors.map((sector) => (
-            <View key={sector.name} style={styles.tile}>
-              <View style={[styles.colorChip, { backgroundColor: sector.tone }]} />
-              <Text style={styles.tileName}>{sector.name}</Text>
-              <Text style={styles.tileChange}>{sector.change}</Text>
+            <Text style={styles.sectionHeader}>Sector Heatmap</Text>
+            <View style={styles.grid}>
+              {sectors.map((sector) => (
+                <View key={sector.name} style={styles.tile}>
+                  <View style={[styles.colorChip, { backgroundColor: sector.tone }]} />
+                  <Text style={styles.tileName}>{sector.name}</Text>
+                  <Text style={styles.tileChange}>{sector.change}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -73,11 +101,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: verticalScale(12),
   },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: scale(8) },
   header: {
     fontSize: moderateScale(20),
     fontWeight: "bold",
     color: "#0f172a",
   },
+  refreshButton: {
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
+    borderRadius: 999,
+  },
+  refreshText: { color: "#2563eb", fontSize: moderateScale(11), fontWeight: "600" },
   pill: {
     flexDirection: "row",
     alignItems: "center",
@@ -88,6 +124,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   pillText: { color: "#2563eb", fontSize: moderateScale(12), fontWeight: "600" },
+  updatedText: {
+    alignSelf: "flex-start",
+    fontSize: moderateScale(11),
+    color: "#64748b",
+    marginBottom: verticalScale(10),
+  },
   signalCard: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -128,4 +170,6 @@ const styles = StyleSheet.create({
   },
   tileName: { fontSize: moderateScale(14), fontWeight: "600", color: "#0f172a" },
   tileChange: { fontSize: moderateScale(12), color: "#64748b", marginTop: 2 },
+  loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
+  loadingText: { color: "#2563eb", fontSize: moderateScale(12) },
 });

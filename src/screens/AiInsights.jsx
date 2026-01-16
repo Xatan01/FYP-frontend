@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import {
   scale,
@@ -26,6 +27,17 @@ const predictions = [
 ];
 
 export default function AiInsights() {
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState("Just now");
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLastUpdated("Just now");
+      setLoading(false);
+    }, 600);
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -33,7 +45,13 @@ export default function AiInsights() {
         contentContainerStyle={{ padding: scale(16), alignItems: "center" }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.header}>AI Robo-Advisor</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.header}>AI Robo-Advisor</Text>
+          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+            <Text style={styles.refreshText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
 
         <LottieView
           source={{ uri: LOTTIE_ROBOT }}
@@ -47,23 +65,30 @@ export default function AiInsights() {
           . Here are some insights I've generated for you:
         </Text>
 
-        {predictions.map((p, i) => (
-          <View key={i} style={styles.card}>
-            <Text style={styles.asset}>{p.asset}</Text>
-            <Text
-              style={[
-                styles.signal,
-                p.signal === "Bullish"
-                  ? { color: "#16a34a" }
-                  : p.signal === "Bearish"
-                  ? { color: "#dc2626" }
-                  : { color: "#d97706" },
-              ]}
-            >
-              {p.signal} - {Math.round(p.confidence * 100)}% confidence
-            </Text>
+        {loading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color="#a855f7" />
+            <Text style={styles.loadingText}>Refreshing insights...</Text>
           </View>
-        ))}
+        ) : (
+          predictions.map((p, i) => (
+            <View key={i} style={styles.card}>
+              <Text style={styles.asset}>{p.asset}</Text>
+              <Text
+                style={[
+                  styles.signal,
+                  p.signal === "Bullish"
+                    ? { color: "#16a34a" }
+                    : p.signal === "Bearish"
+                    ? { color: "#dc2626" }
+                    : { color: "#d97706" },
+                ]}
+              >
+                {p.signal} - {Math.round(p.confidence * 100)}% confidence
+              </Text>
+            </View>
+          ))
+        )}
 
         <TouchableOpacity style={styles.chatButton}>
           <MessageCircle size={20} color="#fff" />
@@ -77,11 +102,30 @@ export default function AiInsights() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1 },
+  headerRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   header: {
     fontSize: moderateScale(22),
     fontWeight: "bold",
     color: "#0f172a",
     marginBottom: verticalScale(4),
+  },
+  refreshButton: {
+    backgroundColor: "#f3e8ff",
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: 999,
+  },
+  refreshText: { color: "#6b21a8", fontSize: moderateScale(12), fontWeight: "600" },
+  updatedText: {
+    alignSelf: "flex-start",
+    fontSize: moderateScale(11),
+    color: "#64748b",
+    marginBottom: verticalScale(10),
   },
   lottie: {
     width: scale(180),
@@ -109,6 +153,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: verticalScale(4),
   },
+  loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
+  loadingText: { color: "#6b21a8", fontSize: moderateScale(12) },
   chatButton: {
     flexDirection: "row",
     alignItems: "center",
