@@ -14,7 +14,9 @@ const Stack = createNativeStackNavigator();
 
 export default function RootNavigator({ userData, learningPath, onCompleteLesson }) {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="MainTabs">
         {(props) => (
           <TabNavigator
@@ -25,8 +27,6 @@ export default function RootNavigator({ userData, learningPath, onCompleteLesson
           />
         )}
       </Stack.Screen>
-      <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="AiInsights" component={AiInsights} />
       <Stack.Screen name="News" component={News} />
       <Stack.Screen name="Charting" component={Charting} />
