@@ -20,7 +20,6 @@ export default function Register({ navigation, onAuthChange }) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const existingUsers = ["alex", "divya", "xavier"];
   const isEmailValid = /\S+@\S+\.\S+/.test(email);
   const isPasswordStrong =
     password.length >= 8 && /[A-Z]/.test(password) && /[^A-Za-z0-9]/.test(password);
@@ -39,10 +38,6 @@ export default function Register({ navigation, onAuthChange }) {
       setError("Username is required.");
       return;
     }
-    if (existingUsers.includes(name.trim().toLowerCase())) {
-      setError("Username is already taken.");
-      return;
-    }
     if (!isEmailValid) {
       setError("Enter a valid email address.");
       return;
@@ -57,21 +52,49 @@ export default function Register({ navigation, onAuthChange }) {
     }
     setError("");
     setIsSubmitting(true);
+    const trimmedName = name.trim();
+    const { data: isAvailable, error: availabilityError } = await supabase.rpc(
+      "is_username_available",
+      { name: trimmedName }
+    );
+    if (availabilityError) {
+      setIsSubmitting(false);
+      setError("Could not check username availability.");
+      return;
+    }
+    if (!isAvailable) {
+      setIsSubmitting(false);
+      setError("Username is already taken.");
+      return;
+    }
     const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { username: name.trim() },
+        data: { username: trimmedName },
       },
     });
-    setIsSubmitting(false);
     if (authError) {
+      setIsSubmitting(false);
       setError(authError.message);
       return;
     }
     if (data?.session) {
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          user_id: data.user.id,
+          username: trimmedName,
+        },
+        { onConflict: "user_id" }
+      );
+      setIsSubmitting(false);
+      if (profileError) {
+        setError("Account created, but profile setup failed.");
+        return;
+      }
       onAuthChange?.(true);
     } else {
+      setIsSubmitting(false);
       setError("Check your email to confirm your account.");
     }
   };
@@ -115,6 +138,9 @@ export default function Register({ navigation, onAuthChange }) {
             onChangeText={setPassword}
           />
         </View>
+        <Text style={styles.passwordHint}>
+          8+ chars, 1 uppercase letter, 1 special character.
+        </Text>
         <View style={styles.inputGroup}>
           <Lock size={18} color="#64748b" />
           <TextInput
@@ -190,6 +216,11 @@ const styles = StyleSheet.create({
   error: {
     color: "#dc2626",
     fontSize: moderateScale(12),
+    marginBottom: verticalScale(10),
+  },
+  passwordHint: {
+    color: "#64748b",
+    fontSize: moderateScale(11),
     marginBottom: verticalScale(10),
   },
   primaryButton: {

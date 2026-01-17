@@ -44,6 +44,16 @@ export default function Login({ navigation, onAuthChange }) {
       return;
     }
     if (data?.session) {
+      const username = data.user?.user_metadata?.username;
+      if (username) {
+        await supabase.from("profiles").upsert(
+          {
+            user_id: data.user.id,
+            username,
+          },
+          { onConflict: "user_id" }
+        );
+      }
       onAuthChange?.(true);
     }
   };
