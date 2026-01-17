@@ -10,6 +10,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { User, Mail, Lock } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import { supabase } from "../lib/supabase";
 
 export default function Register({ navigation, onAuthChange }) {
   const [name, setName] = useState("");
@@ -17,6 +18,7 @@ export default function Register({ navigation, onAuthChange }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const existingUsers = ["alex", "divya", "xavier"];
   const isEmailValid = /\S+@\S+\.\S+/.test(email);
@@ -32,7 +34,7 @@ export default function Register({ navigation, onAuthChange }) {
     [name, isEmailValid, isPasswordStrong, confirm, password]
   );
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim()) {
       setError("Username is required.");
       return;
@@ -54,7 +56,24 @@ export default function Register({ navigation, onAuthChange }) {
       return;
     }
     setError("");
-    onAuthChange?.(true);
+    setIsSubmitting(true);
+    const { data, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username: name.trim() },
+      },
+    });
+    setIsSubmitting(false);
+    if (authError) {
+      setError(authError.message);
+      return;
+    }
+    if (data?.session) {
+      onAuthChange?.(true);
+    } else {
+      setError("Check your email to confirm your account.");
+    }
   };
 
   return (
@@ -113,10 +132,12 @@ export default function Register({ navigation, onAuthChange }) {
         <TouchableOpacity
           style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
           onPress={handleRegister}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isSubmitting}
         >
           <LinearGradient colors={["#16a34a", "#15803d"]} style={styles.primaryFill}>
-            <Text style={styles.primaryText}>Register</Text>
+            <Text style={styles.primaryText}>
+              {isSubmitting ? "Creating account..." : "Register"}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
 

@@ -10,18 +10,20 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail, Lock } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import { supabase } from "../lib/supabase";
 
 export default function Login({ navigation, onAuthChange }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canSubmit = useMemo(
     () => /\S+@\S+\.\S+/.test(email) && password.trim().length > 0,
     [email, password]
   );
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError("Enter a valid email address.");
       return;
@@ -31,7 +33,19 @@ export default function Login({ navigation, onAuthChange }) {
       return;
     }
     setError("");
-    onAuthChange?.(true);
+    setIsSubmitting(true);
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setIsSubmitting(false);
+    if (authError) {
+      setError(authError.message);
+      return;
+    }
+    if (data?.session) {
+      onAuthChange?.(true);
+    }
   };
 
   const handleGoogle = () => {
@@ -82,10 +96,12 @@ export default function Login({ navigation, onAuthChange }) {
         <TouchableOpacity
           style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
           onPress={handleLogin}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isSubmitting}
         >
           <LinearGradient colors={["#2563eb", "#1d4ed8"]} style={styles.primaryFill}>
-            <Text style={styles.primaryText}>Sign In</Text>
+            <Text style={styles.primaryText}>
+              {isSubmitting ? "Signing in..." : "Sign In"}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
 
