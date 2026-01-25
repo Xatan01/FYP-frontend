@@ -10,9 +10,10 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail, Lock } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
-import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
-export default function Login({ navigation, onAuthChange }) {
+export default function Login({ navigation }) {
+  const{login} = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,31 +33,21 @@ export default function Login({ navigation, onAuthChange }) {
       setError("Password is required.");
       return;
     }
+
     setError("");
     setIsSubmitting(true);
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setIsSubmitting(false);
-    if (authError) {
-      setError(authError.message);
-      return;
-    }
-    if (data?.session) {
-      const username = data.user?.user_metadata?.username;
-      if (username) {
-        await supabase.from("profiles").upsert(
-          {
-            user_id: data.user.id,
-            username,
-          },
-          { onConflict: "user_id" }
-        );
-      }
-      onAuthChange?.(true);
+
+    try {
+      await login(email, password);
+      // AuthContext will update session
+      // RootNavigator will switch stacks automatically
+    } catch (err) {
+      setError(err.message || "Failed to sign in");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
 
   const handleGoogle = () => {
     setError("Google sign-in needs backend setup.");
