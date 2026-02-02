@@ -43,7 +43,7 @@ export default function Learn({ learningPath, onCompleteLesson }) {
   const handleLessonPress = (lesson) => {
     if (lesson.status !== 'locked') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onCompleteLesson(lesson.id, lesson.xp);
+      onCompleteLesson(lesson.id);
     }
   };
 
@@ -54,8 +54,6 @@ export default function Learn({ learningPath, onCompleteLesson }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        
-
         <View style={styles.headerContainer}>
             <View style={styles.headerWrap}>
               <Text style={styles.header}>Learning Path</Text>

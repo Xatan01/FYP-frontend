@@ -1,99 +1,103 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { StatusBar } from "expo-status-bar";
 import { enableScreens } from "react-native-screens";
 import * as Haptics from "expo-haptics";
-
-import LessonCompleteModal from "./src/components/LessonCompleteModal"; // We will create this
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
-import usePersistedState from "./src/hooks/usePersistedState";
-import { AuthProvider } from "./src/context/AuthContext";
+
+import LessonCompleteModal from "./src/components/LessonCompleteModal";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import { apiFetch } from "./src/api/client";
 
 enableScreens();
 
-// This data defines your "Gamified Learning Module"
-const initialLearningPath = [
-  {
-    unit: 1,
-    title: "Investing Basics",
-    lessons: [
-      { id: "l1-1", title: "What is a Stock?", type: "lesson", xp: 20, status: "completed" },
-      { id: "l1-2", title: "Bulls vs. Bears", type: "lesson", xp: 20, status: "completed" },
-      { id: "l1-3", title: "Quiz: Basics", type: "quiz", xp: 50, status: "unlocked" },
-      { id: "l1-4", title: "Unit 1 Complete!", type: "milestone", xp: 0, status: "locked" },
-    ],
-  },
-  {
-    unit: 2,
-    title: "Understanding REITs (SG)", // Localized content
-    lessons: [
-      { id: "l2-1", title: "What is a REIT?", type: "lesson", xp: 20, status: "locked" },
-      { id: "l2-2", title: "Types of SG REITs", type: "lesson", xp: 20, status: "locked" },
-      { id: "l2-3", title: "Quiz: REITs", type: "quiz", xp: 50, status: "locked" },
-      { id: "l2-4", title: "Unit 2 Complete!", type: "milestone", xp: 0, status: "locked" },
-    ],
-  },
-];
+function AppInner() {
+  const { session, booting } = useAuth();
 
-export default function App() {
-  const [userData, setUserData] = useState({
-    name: "Alex",
-    xp: 3550,
-    streak: 5,
-    league: "Gold",
-  });
-  const [learningPath, setLearningPath] = useState(initialLearningPath);
+  const [userData, setUserData] = useState(null);
+  const [learningPath, setLearningPath] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [showCongratsModal, setShowCongratsModal] = useState(false);
   const [earnedXp, setEarnedXp] = useState(0);
-  
 
-  // This function handles the gamification logic
-  const handleCompleteLesson = (lessonId, xp) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  useEffect(() => {
+    if (booting) return;
 
-    let newPath = JSON.parse(JSON.stringify(learningPath)); // Deep copy
-    let nextLessonUnlocked = false;
-
-    for (const unit of newPath) {
-      const lessonIndex = unit.lessons.findIndex((l) => l.id === lessonId);
-      if (lessonIndex > -1) {
-        unit.lessons[lessonIndex].status = "completed";
-        const nextLessonIndex = lessonIndex + 1;
-        if (nextLessonIndex < unit.lessons.length) {
-          if (unit.lessons[nextLessonIndex].status === "locked") {
-            unit.lessons[nextLessonIndex].status = "unlocked";
-            nextLessonUnlocked = true;
-          }
-        }
-        break; 
-      }
+    if (!session) {
+      setUserData(null);
+      setLearningPath(null);
+      setLoading(false);
+      return;
     }
 
-    setLearningPath(newPath);
-    setUserData((prev) => ({ ...prev, xp: prev.xp + xp }));
-    setEarnedXp(xp);
+    (async () => {
+      try {
+        setLoading(true);
+
+        const me = await apiFetch("/api/me");
+        setUserData({
+          name: me.user?.email ?? "User",
+          xp: 0,
+          streak: 0,
+          league: "Bronze",
+        });
+
+        const lp = await apiFetch("/api/learning-path");
+        setLearningPath(lp.learning_path);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [session, booting]);
+
+  const handleCompleteLesson = async (lessonId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const res = await apiFetch("/api/lessons/complete", {
+      method: "POST",
+      body: { lesson_id: lessonId },
+    });
+
+    setLearningPath(res.learning_path);
+    setUserData(res.user);
+    setEarnedXp(res.earned_xp || 0); // match backend field name
     setShowCongratsModal(true);
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-
+  if (booting || loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
+    <NavigationContainer>
+      <StatusBar style="auto" />
+      <RootNavigator
+        userData={userData}
+        learningPath={learningPath}
+        onCompleteLesson={handleCompleteLesson}
+      />
+      <LessonCompleteModal
+        visible={showCongratsModal}
+        onClose={() => setShowCongratsModal(false)}
+        xp={earnedXp}
+      />
+    </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
     <AuthProvider>
-      <NavigationContainer>
-        <StatusBar style="auto" />
-        <RootNavigator
-          userData={userData}
-          learningPath={learningPath}
-          onCompleteLesson={handleCompleteLesson}
-        />
-        <LessonCompleteModal
-          visible={showCongratsModal}
-          onClose={() => setShowCongratsModal(false)}
-          xp={earnedXp}
-        />
-      </NavigationContainer>
+      <AppInner />
     </AuthProvider>
   );
 }
@@ -105,5 +109,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#f8fafc",
-  }
+  },
 });
