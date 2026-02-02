@@ -1,4 +1,4 @@
-import React from "react";
+import React, { use } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import TabNavigator from "./TabNavigator";
 import Login from "../screens/Login";
@@ -17,16 +17,22 @@ import Portfolio from "../screens/Portfolio";
 
 const Stack = createNativeStackNavigator();
 
+import { useAuth } from "../context/AuthContext";
+
 export default function RootNavigator({
   userData,
   learningPath,
   onCompleteLesson,
-  isAuthed,
-  onAuthChange,
 }) {
+  const {session,loading} =useAuth(); //session- logged in, loading - supabase restoring session
+
+  if (loading){
+    return null; //or splashscreen later
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthed ? (
+      {session ? (
         <>
           <Stack.Screen name="MainTabs">
             {(props) => (
@@ -35,7 +41,6 @@ export default function RootNavigator({
                 userData={userData}
                 learningPath={learningPath}
                 onCompleteLesson={onCompleteLesson}
-                onAuthChange={onAuthChange}
               />
             )}
           </Stack.Screen>
@@ -52,13 +57,8 @@ export default function RootNavigator({
         </>
       ) : (
         <>
-          <Stack.Screen name="Login">
-            {(props) => <Login {...props} onAuthChange={onAuthChange} />}
-          </Stack.Screen>
-          <Stack.Screen name="Register">
-            {(props) => <Register {...props} onAuthChange={onAuthChange} />}
-          </Stack.Screen>
-          <Stack.Screen name="PasswordReset" component={PasswordReset} />
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Register" component={Register} />
         </>
       )}
     </Stack.Navigator>

@@ -4,9 +4,11 @@ import RootNavigator from "./src/navigation/RootNavigator";
 import { StatusBar } from "expo-status-bar";
 import { enableScreens } from "react-native-screens";
 import * as Haptics from "expo-haptics";
+
 import LessonCompleteModal from "./src/components/LessonCompleteModal"; // We will create this
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import usePersistedState from "./src/hooks/usePersistedState";
+import { AuthProvider } from "./src/context/AuthContext";
 
 enableScreens();
 
@@ -44,11 +46,7 @@ export default function App() {
   const [learningPath, setLearningPath] = useState(initialLearningPath);
   const [showCongratsModal, setShowCongratsModal] = useState(false);
   const [earnedXp, setEarnedXp] = useState(0);
-  const {
-    value: authState,
-    setValue: setAuthState,
-    loading: authLoading,
-  } = usePersistedState("authState", { loggedIn: false });
+  
 
   // This function handles the gamification logic
   const handleCompleteLesson = (lessonId, xp) => {
@@ -79,39 +77,24 @@ export default function App() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleCloseModal = () => {
-    setShowCongratsModal(false);
-  };
 
-  const handleAuthChange = (loggedIn) => {
-    setAuthState({ loggedIn: !!loggedIn });
-  };
-
-  if (authLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Loading session...</Text>
-      </View>
-    );
-  }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <RootNavigator
-        userData={userData}
-        learningPath={learningPath}
-        onCompleteLesson={handleCompleteLesson}
-        isAuthed={authState.loggedIn}
-        onAuthChange={handleAuthChange}
-      />
-      <LessonCompleteModal
-        visible={showCongratsModal}
-        onClose={handleCloseModal}
-        xp={earnedXp}
-      />
-    </NavigationContainer>
+    <AuthProvider>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <RootNavigator
+          userData={userData}
+          learningPath={learningPath}
+          onCompleteLesson={handleCompleteLesson}
+        />
+        <LessonCompleteModal
+          visible={showCongratsModal}
+          onClose={() => setShowCongratsModal(false)}
+          xp={earnedXp}
+        />
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
 
@@ -122,9 +105,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#f8fafc",
-  },
-  loadingText: {
-    color: "#64748b",
-    fontSize: 12,
-  },
+  }
 });

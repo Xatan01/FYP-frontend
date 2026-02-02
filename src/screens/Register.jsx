@@ -10,15 +10,17 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { User, Mail, Lock } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
-import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
-export default function Register({ navigation, onAuthChange }) {
+export default function Register({ navigation }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const {signUp} = useAuth();
 
   const isEmailValid = /\S+@\S+\.\S+/.test(email);
   const isPasswordStrong =
@@ -50,54 +52,21 @@ export default function Register({ navigation, onAuthChange }) {
       setError("Passwords do not match.");
       return;
     }
+
     setError("");
     setIsSubmitting(true);
-    const trimmedName = name.trim();
-    const { data: isAvailable, error: availabilityError } = await supabase.rpc(
-      "is_username_available",
-      { name: trimmedName }
-    );
-    if (availabilityError) {
+
+     try {
+      await signUp(email, password, { username: name.trim() });
+      setVerificationSent(true);
+      console.log(error);
+    } catch (err) {
+      setError(err.message || "Failed to create account.");
+    } finally {
       setIsSubmitting(false);
-      setError("Could not check username availability.");
-      return;
-    }
-    if (!isAvailable) {
-      setIsSubmitting(false);
-      setError("Username is already taken.");
-      return;
-    }
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username: trimmedName },
-      },
-    });
-    if (authError) {
-      setIsSubmitting(false);
-      setError(authError.message);
-      return;
-    }
-    if (data?.session) {
-      const { error: profileError } = await supabase.from("profiles").upsert(
-        {
-          user_id: data.user.id,
-          username: trimmedName,
-        },
-        { onConflict: "user_id" }
-      );
-      setIsSubmitting(false);
-      if (profileError) {
-        setError("Account created, but profile setup failed.");
-        return;
-      }
-      onAuthChange?.(true);
-    } else {
-      setIsSubmitting(false);
-      setError("Check your email to confirm your account.");
     }
   };
+
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -152,7 +121,11 @@ export default function Register({ navigation, onAuthChange }) {
             onChangeText={setConfirm}
           />
         </View>
-
+        {verificationSent && (
+          <Text style={styles.success}>
+            Account created! Check your email to verify before logging in.
+          </Text>
+        )}
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <TouchableOpacity
@@ -244,4 +217,10 @@ const styles = StyleSheet.create({
   },
   footerText: { color: "#64748b", fontSize: moderateScale(12) },
   footerLink: { color: "#2563eb", fontSize: moderateScale(12), fontWeight: "600" },
+  success: {
+    color: "#16a34a",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(10),
+  },
+
 });
