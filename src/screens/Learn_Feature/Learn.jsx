@@ -34,7 +34,7 @@ const formatStepTitle = (title = "") => {
 };
 const getDifficultyTier = (difficulty = "") => {
   const normalized = String(difficulty).trim().toLowerCase();
-  if (normalized === "advanced") return "advanced";
+  if (normalized === "mastery") return "mastery";
   if (normalized === "core") return "core";
   return "basic";
 };
@@ -120,7 +120,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
     if (status === "locked") return <Lock size={26} color="#94a3b8" />;
 
     const tier = getDifficultyTier(difficulty);
-    if (tier === "advanced") return <Flame size={28} color="#fff" />;
+    if (tier === "mastery") return <Flame size={28} color="#fff" />;
     if (tier === "core") return <TrendingUp size={28} color="#fff" />;
     return <BookOpen size={28} color="#fff" />;
 
