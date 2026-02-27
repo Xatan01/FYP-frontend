@@ -21,14 +21,18 @@ export default function TabNavigator({
   userData = {},
   learningPath = [],
   onCompleteLesson,
-  onAuthChange,
 }) {
-  const safeUserData = userData ?? {};
   const safeLearningPath = Array.isArray(learningPath) ? learningPath : [];
+  const safeUserData = userData ?? {
+    name: "User",
+    xp: 0,
+    streak: 0,
+    league: "Bronze",
+  };
 
+  // Check if there's a new lesson to show a badge
   const hasNewLesson = safeLearningPath.some((unit) =>
-    Array.isArray(unit?.lessons) &&
-    unit.lessons.some((l) => l?.status === "unlocked")
+    Array.isArray(unit?.lessons) && unit.lessons.some((l) => l.status === "unlocked")
   );
 
   return (
@@ -74,7 +78,6 @@ export default function TabNavigator({
         {(props) => (
           <Learn
             {...props}
-            userData={safeUserData}
             learningPath={safeLearningPath}
             onCompleteLesson={onCompleteLesson}
           />
@@ -103,9 +106,8 @@ export default function TabNavigator({
           tabBarIcon: ({ color }) => <User color={color} size={24} />,
         }}
       >
-        {(props) => (
-          <Profile {...props} userData={safeUserData} onAuthChange={onAuthChange} />
-        )}
+        {/* The hub for badges, progress, and leagues */}
+        {(props) => <Profile {...props} userData={safeUserData} />}
       </Tab.Screen>
     </Tab.Navigator>
   );

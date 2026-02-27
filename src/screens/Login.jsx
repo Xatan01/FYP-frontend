@@ -12,9 +12,11 @@ import { Mail, Lock } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { useAuth } from "../context/AuthContext";
 
-export default function Login({ navigation }) {
+export default function Login({ navigation, route }) {
+  const initialEmail = route?.params?.email ?? "";
+  const successMessage = route?.params?.successMessage ?? "";
   const{login} = useAuth();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,6 +94,7 @@ export default function Login({ navigation }) {
           </Text>
         </TouchableOpacity>
 
+        {!!successMessage && <Text style={styles.success}>{successMessage}</Text>}
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <TouchableOpacity
@@ -163,6 +166,11 @@ const styles = StyleSheet.create({
   forgotText: { color: "#2563eb", fontSize: moderateScale(12) },
   error: {
     color: "#dc2626",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(10),
+  },
+  success: {
+    color: "#16a34a",
     fontSize: moderateScale(12),
     marginBottom: verticalScale(10),
   },

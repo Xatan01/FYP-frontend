@@ -19,7 +19,6 @@ export default function Register({ navigation }) {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
   const {signUp} = useAuth();
 
   const isEmailValid = /\S+@\S+\.\S+/.test(email);
@@ -58,8 +57,10 @@ export default function Register({ navigation }) {
 
      try {
       await signUp(email, password, { username: name.trim() });
-      setVerificationSent(true);
-      console.log(error);
+      navigation.replace("Login", {
+        email,
+        successMessage: "Account created. Verify email, then sign in.",
+      });
     } catch (err) {
       setError(err.message || "Failed to create account.");
     } finally {
@@ -121,11 +122,6 @@ export default function Register({ navigation }) {
             onChangeText={setConfirm}
           />
         </View>
-        {verificationSent && (
-          <Text style={styles.success}>
-            Account created! Check your email to verify before logging in.
-          </Text>
-        )}
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <TouchableOpacity
