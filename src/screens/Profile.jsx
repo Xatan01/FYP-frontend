@@ -25,6 +25,7 @@ import {
 } from "lucide-react-native";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "../context/AuthContext";
 
 // Free Lottie animation for the streak flame
 const LOTTIE_FLAME = "https://lottie.host/0f6b4d3c-1191-4e4f-b1e0-466a9bafaa26/uNFITb1eim.json";
@@ -49,7 +50,8 @@ const leaderboard = [
   { id: 4, name: "Sarah K.", xp: 3210, avatar: "https://placehold.co/100x100/16a34a/ffffff?text=SK" },
 ];
 
-export default function Profile({ userData, onAuthChange }) {
+export default function Profile({ userData }) {
+  const { logout } = useAuth();
   const myUser = leaderboard.find((u) => u.name.includes("You"));
   
   return (
@@ -68,7 +70,7 @@ export default function Profile({ userData, onAuthChange }) {
 
         <TouchableOpacity
           style={styles.signOutButton}
-          onPress={() => onAuthChange?.(false)}
+          onPress={logout}
         >
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
