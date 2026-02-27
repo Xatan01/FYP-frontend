@@ -14,7 +14,7 @@ import ConsultationBooking from "../screens/ConsultationBooking";
 import Community from "../screens/Community";
 import AlertsSettings from "../screens/AlertsSettings";
 import Portfolio from "../screens/Portfolio";
-import LessonDetail from "../screens/LessonDetail";
+import LessonDetail from "../screens/Learn_Feature/LessonDetail";
 import { useAuth } from "../context/AuthContext";
 
 const Stack = createNativeStackNavigator();

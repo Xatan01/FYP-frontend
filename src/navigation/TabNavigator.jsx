@@ -10,7 +10,7 @@ import {
 import { verticalScale, moderateScale } from "../styles/responsive";
 
 import Home from "../screens/Home";
-import Learn from "../screens/Learn";
+import Learn from "../screens/Learn_Feature/Learn";
 import Watchlist from "../screens/Watchlist";
 import Consult from "../screens/Consult";
 import Profile from "../screens/Profile";

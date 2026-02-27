@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import { scale, verticalScale, moderateScale } from "../../styles/responsive";
 
 function renderJson(value) {
   if (value == null) return "No lesson content found.";

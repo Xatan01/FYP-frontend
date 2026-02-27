@@ -8,11 +8,11 @@ import {
   StyleSheet,
   Animated,
 } from "react-native";
-import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import { scale, verticalScale, moderateScale } from "../../styles/responsive";
 import { LinearGradient } from "expo-linear-gradient";
 import { BookOpen, Lock, Award, Star, TrendingUp, Flame, NotebookPen } from "lucide-react-native";
 import * as Haptics from 'expo-haptics';
-import { fetchLessonByTopicId } from "../api/learning";
+import { fetchLessonByTopicId } from "../../api/learning";
 
 const TOPIC_NAME_MAP = {
   1: "Introduction to Stocks",
