@@ -24,6 +24,14 @@ const formatSubtopicName = (name = "") => {
   const cleaned = String(name).replace(/_/g, " ").trim();
   return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "";
 };
+const formatStepTitle = (title = "") => {
+  const cleaned = String(title)
+    .replace(/^\s*\S+\s*:\s*/, "")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "";
+};
 
 export default function Learn({ learningPath = [], userData = {}, navigation }) {
   const [backendPath, setBackendPath] = useState([]);
@@ -206,10 +214,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                       {pathItems.map((lesson, index) => (
                         <View
                           key={lesson.id}
-                          style={[
-                            styles.nodeWrapper,
-                            index % 2 === 0 ? styles.leftAlign : styles.rightAlign,
-                          ]}
+                          style={styles.nodeWrapper}
                         >
                           {/* Road Path */}
                           {index !== 0 && (
@@ -340,7 +345,7 @@ const styles = StyleSheet.create({
   },
 
   pathContainer: { position: "relative", paddingHorizontal: "10%" },
-  nodeWrapper: { marginBottom: verticalScale(22) },
+  nodeWrapper: { marginBottom: verticalScale(22), alignItems: "center" },
   leftAlign: { alignItems: "flex-start" },
   rightAlign: { alignItems: "flex-end" },
 
@@ -352,6 +357,6 @@ const styles = StyleSheet.create({
   nodeUnlocked: { backgroundColor: "#22c55e", shadowColor: "#22c55e", shadowOpacity: 0.7, shadowRadius: 16, elevation: 10 },
   nodeLocked: { backgroundColor: "#1e293b", borderWidth: 1, borderColor: "#334155" },
   nodeSummary: { backgroundColor: "#fde047", borderWidth: 1, borderColor: "#facc15", shadowColor: "#fde047", shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
-  nodeLabel: { marginTop: verticalScale(8), maxWidth: scale(150), fontSize: moderateScale(13), fontWeight: "600", color: "#e5e7eb" },
+  nodeLabel: { marginTop: verticalScale(8), width: scale(170), textAlign: "center", fontSize: moderateScale(13), fontWeight: "600", color: "#e5e7eb" },
   nodeLabelLocked: { color: "#64748b" },
 });
