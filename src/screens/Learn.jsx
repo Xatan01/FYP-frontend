@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { LinearGradient } from "expo-linear-gradient";
-import { BookOpen, Check, Lock, Play, Award, Star } from "lucide-react-native";
+import { BookOpen, Lock, Award, Star, TrendingUp, Flame, NotebookPen } from "lucide-react-native";
 import * as Haptics from 'expo-haptics';
 import { fetchLessonByTopicId } from "../api/learning";
 
@@ -31,6 +31,12 @@ const formatStepTitle = (title = "") => {
     .replace(/\s+/g, " ")
     .trim();
   return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "";
+};
+const getDifficultyTier = (difficulty = "") => {
+  const normalized = String(difficulty).trim().toLowerCase();
+  if (normalized === "advanced") return "advanced";
+  if (normalized === "core") return "core";
+  return "basic";
 };
 
 export default function Learn({ learningPath = [], userData = {}, navigation }) {
@@ -71,7 +77,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                 status: cIdx === 0 ? "unlocked" : "completed",
                 type: "lesson",
                 xp: 0,
-                difficulty: content.difficulty,
+                difficulty: String(content.difficulty ?? "basic").trim().toLowerCase(),
                 summary: content.summary,
                 content_json: content.content_json,
               })),
@@ -108,17 +114,16 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
     }
   };
 
-  const getIcon = (status, type) => {
+  const getIcon = (status, type, difficulty) => {
     if (type === "summary") return <Award size={28} color="#fff" />;
     if (type === "milestone") return <Award size={28} color="#fff" />;
-    switch (status) {
-      case "completed":
-        return <Check size={28} color="#fff" />;
-      case "unlocked":
-        return <Play size={28} color="#fff" />;
-      default:
-        return <Lock size={26} color="#94a3b8" />;
-    }
+    if (status === "locked") return <Lock size={26} color="#94a3b8" />;
+
+    const tier = getDifficultyTier(difficulty);
+    if (tier === "advanced") return <Flame size={28} color="#fff" />;
+    if (tier === "core") return <TrendingUp size={28} color="#fff" />;
+    return <BookOpen size={28} color="#fff" />;
+
   };
 
   const handleLessonPress = (unit, lesson) => {
@@ -139,6 +144,25 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
       contentJson: lesson.content_json,
       stepIndex: 1,
     });
+  };
+  const handlePathItemPress = (unit, lesson, index) => {
+    if (lesson.type === "summary") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      navigation.navigate("LessonDetail", {
+        topicId: unit.topic_id,
+        topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
+        subtopicId: unit.subtopic_id,
+        subtopicName: formatSubtopicName(unit.subtopic_name),
+        contentId: lesson.id,
+        contentTitle: `${formatSubtopicName(unit.subtopic_name)} Summary`,
+        difficulty: "Summary",
+        summary: null,
+        contentJson: unit.subtopic_summary,
+        stepIndex: index + 1,
+      });
+      return;
+    }
+    handleLessonPress(unit, lesson);
   };
 
   return (
@@ -203,10 +227,6 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                           <View style={[styles.progressBarFill, { width: `${unitProgress}%` }]} />
                         </View>
                       </View>
-
-                      <View style={styles.unitIconWrap}>
-                        <BookOpen size={18} color="#0f172a" />
-                      </View>
                     </LinearGradient>
 
                     {/* Lesson Path */}
@@ -226,36 +246,41 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                             </View>
                           )}
 
-                          <Animated.View
-                            style={null}
-                          >
-                            <TouchableOpacity
-                              activeOpacity={0.85}
-                              disabled={lesson.status === "locked"}
-                              style={[styles.node, getNodeStyle(lesson.status, lesson.type)]}
-                              onPress={() => {
-                                if (lesson.type === "summary") {
-                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                  navigation.navigate("LessonDetail", {
-                                    topicId: unit.topic_id,
-                                    topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
-                                    subtopicId: unit.subtopic_id,
-                                    subtopicName: formatSubtopicName(unit.subtopic_name),
-                                    contentId: lesson.id,
-                                    contentTitle: `${formatSubtopicName(unit.subtopic_name)} Summary`,
-                                    difficulty: "Summary",
-                                    summary: null,
-                                    contentJson: unit.subtopic_summary,
-                                    stepIndex: index + 1,
-                                  });
-                                  return;
-                                }
-                                handleLessonPress(unit, lesson);
-                              }}
+                          <View style={styles.nodeRow}>
+                            <Animated.View
+                              style={null}
                             >
-                              {getIcon(lesson.status, lesson.type)}
-                            </TouchableOpacity>
-                          </Animated.View>
+                              <TouchableOpacity
+                                activeOpacity={0.85}
+                                disabled={lesson.status === "locked"}
+                                style={[styles.node, getNodeStyle(lesson.status, lesson.type)]}
+                                onPress={() => handlePathItemPress(unit, lesson, index)}
+                              >
+                                {getIcon(lesson.status, lesson.type, lesson.difficulty)}
+                              </TouchableOpacity>
+                            </Animated.View>
+
+                            {lesson.type !== "summary" && (
+                              <View style={styles.quizBranch}>
+                                <LinearGradient
+                                  colors={["#64748b", "#1e293b"]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 0 }}
+                                  style={styles.quizBranchLine}
+                                />
+                                <TouchableOpacity
+                                  activeOpacity={0.85}
+                                  disabled
+                                  style={[
+                                    styles.quizNode,
+                                    styles.quizNodePlaceholder,
+                                  ]}
+                                >
+                                  <NotebookPen size={22} color="#f8fafc" />
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
 
                           <Text
                             style={[
@@ -345,7 +370,8 @@ const styles = StyleSheet.create({
   },
 
   pathContainer: { position: "relative", paddingHorizontal: "10%" },
-  nodeWrapper: { marginBottom: verticalScale(22), alignItems: "center" },
+  nodeWrapper: { marginBottom: verticalScale(22), alignItems: "center", width: "100%" },
+  nodeRow: { width: "100%", alignItems: "center", justifyContent: "center", position: "relative" },
   leftAlign: { alignItems: "flex-start" },
   rightAlign: { alignItems: "flex-end" },
 
@@ -357,6 +383,31 @@ const styles = StyleSheet.create({
   nodeUnlocked: { backgroundColor: "#22c55e", shadowColor: "#22c55e", shadowOpacity: 0.7, shadowRadius: 16, elevation: 10 },
   nodeLocked: { backgroundColor: "#1e293b", borderWidth: 1, borderColor: "#334155" },
   nodeSummary: { backgroundColor: "#fde047", borderWidth: 1, borderColor: "#facc15", shadowColor: "#fde047", shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  quizBranch: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    marginLeft: scale(48),
+    transform: [{ translateY: -scale(26) }],
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  quizBranchLine: { width: scale(24), height: 2, borderRadius: 1 },
+  quizNode: {
+    width: scale(52),
+    height: scale(52),
+    borderRadius: scale(26),
+    backgroundColor: "#0ea5e9",
+    borderWidth: 1,
+    borderColor: "#7dd3fc",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#0ea5e9",
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  quizNodePlaceholder: { backgroundColor: "#0f172a", borderColor: "#334155" },
   nodeLabel: { marginTop: verticalScale(8), width: scale(170), textAlign: "center", fontSize: moderateScale(13), fontWeight: "600", color: "#e5e7eb" },
   nodeLabelLocked: { color: "#64748b" },
 });
