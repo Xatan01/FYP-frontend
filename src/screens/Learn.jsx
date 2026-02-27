@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -12,12 +12,80 @@ import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { LinearGradient } from "expo-linear-gradient";
 import { BookOpen, Check, Lock, Play, Award, Star } from "lucide-react-native";
 import * as Haptics from 'expo-haptics';
-import usePulseAnimation from "../hooks/usePulseAnimation";
+import { fetchLessonByTopicId } from "../api/learning";
 
-export default function Learn({ learningPath, onCompleteLesson }) {
-  const pulseAnimation = usePulseAnimation();
+const TOPIC_NAME_MAP = {
+  1: "Introduction to Stocks",
+  2: "How Stock Market Work",
+  3: "Key Market Terms",
+};
+const TOPIC_IDS = Object.keys(TOPIC_NAME_MAP).map((id) => Number(id));
 
-  const getNodeStyle = (status) => {
+export default function Learn({ learningPath = [], userData = {}, navigation }) {
+  const [backendPath, setBackendPath] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        console.log("[Learn] loading topic ids from TOPIC_NAME_MAP", TOPIC_IDS);
+        const settled = await Promise.allSettled(
+          TOPIC_IDS.map((topicId) => fetchLessonByTopicId(topicId))
+        );
+
+        if (!mounted) return;
+
+        const topicPayloads = settled
+          .filter((r) => r.status === "fulfilled")
+          .map((r) => r.value);
+
+        const transformed = [];
+
+        topicPayloads.forEach((topic) => {
+          const subtopics = Array.isArray(topic?.subtopics) ? topic.subtopics : [];
+          subtopics.forEach((subtopic, idx) => {
+            const contents = Array.isArray(subtopic?.contents) ? subtopic.contents : [];
+            transformed.push({
+              unit: `${topic.topic_id}.${idx + 1}`,
+              topic_id: topic.topic_id,
+              topic_name: topic.topic_name,
+              subtopic_id: subtopic.subtopic_id,
+              subtopic_name: subtopic.subtopic_name,
+              subtopic_summary: subtopic?.subtopic_summary?.summary_content ?? null,
+              lessons: contents.map((content, cIdx) => ({
+                id: content.content_id,
+                title: content.title.replace(/^\s*\S+\s*:\s*/, ""),
+                status: cIdx === 0 ? "unlocked" : "completed",
+                type: "lesson",
+                xp: 0,
+                difficulty: content.difficulty,
+                summary: content.summary,
+                content_json: content.content_json,
+              })),
+            });
+          });
+        });
+
+        console.log("[Learn] transformed learningPath", { units: transformed.length });
+        setBackendPath(transformed);
+      } catch (err) {
+        console.log("[Learn] failed to load lessons", err?.message || err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const effectivePath = useMemo(() => {
+    if (Array.isArray(learningPath) && learningPath.length > 0) return learningPath;
+    return backendPath;
+  }, [learningPath, backendPath]);
+
+  const getNodeStyle = (status, type) => {
+    if (type === "summary") return styles.nodeSummary;
     switch (status) {
       case "completed":
         return styles.nodeCompleted;
@@ -29,6 +97,7 @@ export default function Learn({ learningPath, onCompleteLesson }) {
   };
 
   const getIcon = (status, type) => {
+    if (type === "summary") return <Award size={28} color="#fff" />;
     if (type === "milestone") return <Award size={28} color="#fff" />;
     switch (status) {
       case "completed":
@@ -40,11 +109,24 @@ export default function Learn({ learningPath, onCompleteLesson }) {
     }
   };
 
-  const handleLessonPress = (lesson) => {
-    if (lesson.status !== 'locked') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onCompleteLesson(lesson.id);
-    }
+  const handleLessonPress = (unit, lesson) => {
+    if (lesson.status === 'locked') return;
+
+    const mappedTopicName = TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate("LessonDetail", {
+      topicId: unit.topic_id,
+      topicName: mappedTopicName,
+      subtopicId: unit.subtopic_id,
+      subtopicName: unit.subtopic_name,
+      contentId: lesson.id,
+      contentTitle: lesson.title,
+      difficulty: lesson.difficulty,
+      summary: lesson.summary,
+      contentJson: lesson.content_json,
+      stepIndex: 1,
+    });
   };
 
   return (
@@ -54,6 +136,8 @@ export default function Learn({ learningPath, onCompleteLesson }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
+        
+
         <View style={styles.headerContainer}>
             <View style={styles.headerWrap}>
               <Text style={styles.header}>Learning Path</Text>
@@ -61,81 +145,123 @@ export default function Learn({ learningPath, onCompleteLesson }) {
             </View>
             <View style={styles.xpBadge}>
               <Star size={16} color="#F59E0B" fill="#F59E0B"/>
-              <Text style={styles.xpText}>1,240 XP</Text>
+              <Text style={styles.xpText}>{userData?.xp ?? 0} XP</Text>
             </View>
         </View>
 
-        {learningPath.map((unit) => {
-          const completedLessons = unit.lessons.filter(l => l.status === 'completed').length;
-          const unitProgress = (completedLessons / unit.lessons.length) * 100;
+        {Object.entries(TOPIC_NAME_MAP).map(([topicIdKey, mappedTopicName]) => {
+          const topicId = Number(topicIdKey);
+          const topicUnits = effectivePath.filter((unit) => unit.topic_id === topicId);
+          if (topicUnits.length === 0) return null;
 
           return (
-            <View key={unit.unit} style={styles.unitContainer}>
-              {/* Unit Card */}
-              <LinearGradient
-                colors={["#0f172a", "#1e293b"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.unitCard}
-              >
-                <View>
-                  <Text style={styles.unitOverline}>UNIT {unit.unit}</Text>
-                  <Text style={styles.unitTitle}>{unit.title}</Text>
-                  {/* Progress Bar */}
-                  <View style={styles.progressBarBackground}>
-                    <View style={[styles.progressBarFill, { width: `${unitProgress}%` }]} />
-                  </View>
-                </View>
+            <View key={topicId} style={styles.topicGroup}>
+              <Text style={styles.topicGroupTitle}>{mappedTopicName}</Text>
 
-                <View style={styles.unitIconWrap}>
-                  <BookOpen size={18} color="#0f172a" />
-                </View>
-              </LinearGradient>
+              {topicUnits.map((unit) => {
+                const lessons = Array.isArray(unit.lessons) ? unit.lessons : [];
+                const completedLessons = lessons.filter(l => l.status === 'completed').length;
+                const unitProgress = lessons.length ? (completedLessons / lessons.length) * 100 : 0;
+                const pathItems = unit.subtopic_summary
+                  ? [
+                      ...lessons,
+                      {
+                        id: `summary-${unit.subtopic_id}`,
+                        title: "Subtopic Summary",
+                        status: "unlocked",
+                        type: "summary",
+                      },
+                    ]
+                  : lessons;
 
-              {/* Lesson Path */}
-              <View style={styles.pathContainer}>
-                {unit.lessons.map((lesson, index) => (
-                  <View
-                    key={lesson.id}
-                    style={[
-                      styles.nodeWrapper,
-                      index % 2 === 0 ? styles.leftAlign : styles.rightAlign,
-                    ]}
-                  >
-                    {/* Road Path */}
-                    {index !== 0 && (
-                      <View style={styles.roadConnector}>
-                        <LinearGradient
-                          colors={["#64748b", "#1e293b"]}
-                          style={styles.roadLine}
-                        />
+                return (
+                  <View key={unit.unit} style={styles.unitContainer}>
+                    {/* Unit Card */}
+                    <LinearGradient
+                      colors={["#0f172a", "#1e293b"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.unitCard}
+                    >
+                      <View>
+                        <Text style={styles.unitOverline}>UNIT {unit.unit}</Text>
+                        <Text style={styles.unitTitle}>{unit.subtopic_name}</Text>
+                        {/* Progress Bar */}
+                        <View style={styles.progressBarBackground}>
+                          <View style={[styles.progressBarFill, { width: `${unitProgress}%` }]} />
+                        </View>
                       </View>
-                    )}
 
-                    <Animated.View
-                      style={lesson.status === "unlocked" ? pulseAnimation : null}
-                    >
-                      <TouchableOpacity
-                        activeOpacity={0.85}
-                        disabled={lesson.status === "locked"}
-                        style={[styles.node, getNodeStyle(lesson.status)]}
-                        onPress={() => handleLessonPress(lesson)}
-                      >
-                        {getIcon(lesson.status, lesson.type)}
-                      </TouchableOpacity>
-                    </Animated.View>
+                      <View style={styles.unitIconWrap}>
+                        <BookOpen size={18} color="#0f172a" />
+                      </View>
+                    </LinearGradient>
 
-                    <Text
-                      style={[
-                        styles.nodeLabel,
-                        lesson.status === "locked" && styles.nodeLabelLocked,
-                      ]}
-                    >
-                      {lesson.title}
-                    </Text>
+                    {/* Lesson Path */}
+                    <View style={styles.pathContainer}>
+                      {pathItems.map((lesson, index) => (
+                        <View
+                          key={lesson.id}
+                          style={[
+                            styles.nodeWrapper,
+                            index % 2 === 0 ? styles.leftAlign : styles.rightAlign,
+                          ]}
+                        >
+                          {/* Road Path */}
+                          {index !== 0 && (
+                            <View style={styles.roadConnector}>
+                              <LinearGradient
+                                colors={["#64748b", "#1e293b"]}
+                                style={styles.roadLine}
+                              />
+                            </View>
+                          )}
+
+                          <Animated.View
+                            style={null}
+                          >
+                            <TouchableOpacity
+                              activeOpacity={0.85}
+                              disabled={lesson.status === "locked"}
+                              style={[styles.node, getNodeStyle(lesson.status, lesson.type)]}
+                              onPress={() => {
+                                if (lesson.type === "summary") {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                  navigation.navigate("LessonDetail", {
+                                    topicId: unit.topic_id,
+                                    topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
+                                    subtopicId: unit.subtopic_id,
+                                    subtopicName: unit.subtopic_name,
+                                    contentId: lesson.id,
+                                    contentTitle: `${unit.subtopic_name} Summary`,
+                                    difficulty: "Summary",
+                                    summary: null,
+                                    contentJson: unit.subtopic_summary,
+                                    stepIndex: index + 1,
+                                  });
+                                  return;
+                                }
+                                handleLessonPress(unit, lesson);
+                              }}
+                            >
+                              {getIcon(lesson.status, lesson.type)}
+                            </TouchableOpacity>
+                          </Animated.View>
+
+                          <Text
+                            style={[
+                              styles.nodeLabel,
+                              lesson.status === "locked" && styles.nodeLabelLocked,
+                            ]}
+                          >
+                            {lesson.title}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                ))}
-              </View>
+                );
+              })}
             </View>
           );
         })}
@@ -175,6 +301,13 @@ const styles = StyleSheet.create({
     color: '#c7a47b',
     marginLeft: 6
   },
+  topicGroup: { marginBottom: verticalScale(10) },
+  topicGroupTitle: {
+    fontSize: moderateScale(20),
+    fontWeight: "800",
+    color: "#f8fafc",
+    marginBottom: verticalScale(12),
+  },
   unitContainer: { marginBottom: verticalScale(36) },
   unitCard: {
     borderRadius: 22,
@@ -195,6 +328,14 @@ const styles = StyleSheet.create({
   progressBarBackground: { height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: verticalScale(8), overflow: 'hidden' },
   progressBarFill: { height: 6, backgroundColor: '#22c55e', borderRadius: 3 },
 
+  subtopicSummary: {
+    color: "#94a3b8",
+    fontSize: moderateScale(12),
+    marginTop: -verticalScale(12),
+    marginBottom: verticalScale(12),
+    fontFamily: "Courier",
+  },
+
   pathContainer: { position: "relative", paddingHorizontal: "10%" },
   nodeWrapper: { marginBottom: verticalScale(22) },
   leftAlign: { alignItems: "flex-start" },
@@ -207,6 +348,7 @@ const styles = StyleSheet.create({
   nodeCompleted: { backgroundColor: "#2563eb", shadowColor: "#2563eb", shadowOpacity: 0.6, shadowRadius: 14, elevation: 8 },
   nodeUnlocked: { backgroundColor: "#22c55e", shadowColor: "#22c55e", shadowOpacity: 0.7, shadowRadius: 16, elevation: 10 },
   nodeLocked: { backgroundColor: "#1e293b", borderWidth: 1, borderColor: "#334155" },
+  nodeSummary: { backgroundColor: "#fde047", borderWidth: 1, borderColor: "#facc15", shadowColor: "#fde047", shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
   nodeLabel: { marginTop: verticalScale(8), maxWidth: scale(150), fontSize: moderateScale(13), fontWeight: "600", color: "#e5e7eb" },
   nodeLabelLocked: { color: "#64748b" },
 });

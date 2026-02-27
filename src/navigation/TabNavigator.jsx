@@ -9,24 +9,26 @@ import {
 } from "lucide-react-native";
 import { verticalScale, moderateScale } from "../styles/responsive";
 
-// Import all the required screens
 import Home from "../screens/Home";
 import Learn from "../screens/Learn";
-import Watchlist from "../screens/Watchlist"; // Your original screen
-import Consult from "../screens/Consult";   // Your original screen
-import Profile from "../screens/Profile";   // A new screen
+import Watchlist from "../screens/Watchlist";
+import Consult from "../screens/Consult";
+import Profile from "../screens/Profile";
 
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator({
-  userData,
-  learningPath,
+  userData = {},
+  learningPath = [],
   onCompleteLesson,
   onAuthChange,
 }) {
-  // Check if there's a new lesson to show a badge
-  const hasNewLesson = learningPath.some((unit) =>
-    unit.lessons.some((l) => l.status === "unlocked")
+  const safeUserData = userData ?? {};
+  const safeLearningPath = Array.isArray(learningPath) ? learningPath : [];
+
+  const hasNewLesson = safeLearningPath.some((unit) =>
+    Array.isArray(unit?.lessons) &&
+    unit.lessons.some((l) => l?.status === "unlocked")
   );
 
   return (
@@ -53,14 +55,15 @@ export default function TabNavigator({
         }}
       >
         {(props) => (
-          <Home {...props} userData={userData} learningPath={learningPath} />
+          <Home {...props} userData={safeUserData} learningPath={safeLearningPath} />
         )}
       </Tab.Screen>
+
       <Tab.Screen
         name="Learn"
         options={{
           tabBarIcon: ({ color }) => <BookOpen color={color} size={24} />,
-          tabBarBadge: hasNewLesson ? "!" : null, // Gamification!
+          tabBarBadge: hasNewLesson ? "!" : null,
           tabBarBadgeStyle: {
             backgroundColor: "#ef4444",
             color: "#fff",
@@ -71,33 +74,38 @@ export default function TabNavigator({
         {(props) => (
           <Learn
             {...props}
-            learningPath={learningPath}
+            userData={safeUserData}
+            learningPath={safeLearningPath}
             onCompleteLesson={onCompleteLesson}
           />
         )}
       </Tab.Screen>
+
       <Tab.Screen
         name="Watchlist"
-        component={Watchlist} // Your core FYP feature
+        component={Watchlist}
         options={{
           tabBarIcon: ({ color }) => <Eye color={color} size={24} />,
         }}
       />
+
       <Tab.Screen
         name="Consult"
-        component={Consult} // Your core FYP feature
+        component={Consult}
         options={{
           tabBarIcon: ({ color }) => <MessageCircle color={color} size={24} />,
         }}
       />
+
       <Tab.Screen
         name="Profile"
         options={{
           tabBarIcon: ({ color }) => <User color={color} size={24} />,
         }}
       >
-        {/* The hub for badges, progress, and leagues */}
-        {(props) => <Profile {...props} userData={userData} onAuthChange={onAuthChange} />}
+        {(props) => (
+          <Profile {...props} userData={safeUserData} onAuthChange={onAuthChange} />
+        )}
       </Tab.Screen>
     </Tab.Navigator>
   );

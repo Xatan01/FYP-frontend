@@ -1,4 +1,4 @@
-import React, { use } from "react";
+import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import TabNavigator from "./TabNavigator";
 import Login from "../screens/Login";
@@ -14,20 +14,20 @@ import ConsultationBooking from "../screens/ConsultationBooking";
 import Community from "../screens/Community";
 import AlertsSettings from "../screens/AlertsSettings";
 import Portfolio from "../screens/Portfolio";
+import LessonDetail from "../screens/LessonDetail";
+import { useAuth } from "../context/AuthContext";
 
 const Stack = createNativeStackNavigator();
-
-import { useAuth } from "../context/AuthContext";
 
 export default function RootNavigator({
   userData,
   learningPath,
   onCompleteLesson,
 }) {
-  const {session,loading} =useAuth(); //session- logged in, loading - supabase restoring session
+  const { session, loading } = useAuth();
 
-  if (loading){
-    return null; //or splashscreen later
+  if (loading) {
+    return null;
   }
 
   return (
@@ -44,13 +44,23 @@ export default function RootNavigator({
               />
             )}
           </Stack.Screen>
+
+          <Stack.Screen name="LessonDetail">
+            {(props) => (
+              <LessonDetail {...props} onCompleteLesson={onCompleteLesson} />
+            )}
+          </Stack.Screen>
+
           <Stack.Screen name="AiInsights" component={AiInsights} />
           <Stack.Screen name="News" component={News} />
           <Stack.Screen name="Charting" component={Charting} />
           <Stack.Screen name="TradingJournal" component={TradingJournal} />
           <Stack.Screen name="MarketTrends" component={MarketTrends} />
           <Stack.Screen name="ChatConsult" component={ChatConsult} />
-          <Stack.Screen name="ConsultationBooking" component={ConsultationBooking} />
+          <Stack.Screen
+            name="ConsultationBooking"
+            component={ConsultationBooking}
+          />
           <Stack.Screen name="Community" component={Community} />
           <Stack.Screen name="AlertsSettings" component={AlertsSettings} />
           <Stack.Screen name="Portfolio" component={Portfolio} />

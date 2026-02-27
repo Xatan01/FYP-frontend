@@ -3,7 +3,6 @@ import { NavigationContainer } from "@react-navigation/native";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { StatusBar } from "expo-status-bar";
 import { enableScreens } from "react-native-screens";
-import * as Haptics from "expo-haptics";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 
 import LessonCompleteModal from "./src/components/LessonCompleteModal";
@@ -12,22 +11,28 @@ import { apiFetch } from "./src/api/client";
 
 enableScreens();
 
+function normalizeUser(user, fallbackEmail) {
+  return {
+    name: user?.name ?? user?.email ?? fallbackEmail ?? "User",
+    xp: user?.xp ?? 0,
+    streak: user?.streak ?? 0,
+    league: user?.league ?? "Bronze",
+  };
+}
+
 function AppInner() {
-  const { session, booting } = useAuth();
+  const { session, loading: authLoading } = useAuth();
 
   const [userData, setUserData] = useState(null);
-  const [learningPath, setLearningPath] = useState(null);
+  const [learningPath, setLearningPath] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [showCongratsModal, setShowCongratsModal] = useState(false);
-  const [earnedXp, setEarnedXp] = useState(0);
-
   useEffect(() => {
-    if (booting) return;
+    if (authLoading) return;
 
     if (!session) {
       setUserData(null);
-      setLearningPath(null);
+      setLearningPath([]);
       setLoading(false);
       return;
     }
@@ -35,40 +40,19 @@ function AppInner() {
     (async () => {
       try {
         setLoading(true);
-
-        const me = await apiFetch("/api/me");
-        setUserData({
-          name: me.user?.email ?? "User",
-          xp: 0,
-          streak: 0,
-          league: "Bronze",
-        });
-
-        const lp = await apiFetch("/api/learning-path");
-        setLearningPath(lp.learning_path);
+        const me = await apiFetch("/auth/me");
+        setUserData(normalizeUser(me?.user, session?.user?.email));
+        setLearningPath([]);
+      } catch {
+        setUserData(normalizeUser(null, session?.user?.email));
+        setLearningPath([]);
       } finally {
         setLoading(false);
       }
     })();
-  }, [session, booting]);
+  }, [session, authLoading]);
 
-  const handleCompleteLesson = async (lessonId) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    const res = await apiFetch("/api/lessons/complete", {
-      method: "POST",
-      body: { lesson_id: lessonId },
-    });
-
-    setLearningPath(res.learning_path);
-    setUserData(res.user);
-    setEarnedXp(res.earned_xp || 0); // match backend field name
-    setShowCongratsModal(true);
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  if (booting || loading) {
+  if (authLoading || loading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator />
@@ -83,13 +67,9 @@ function AppInner() {
       <RootNavigator
         userData={userData}
         learningPath={learningPath}
-        onCompleteLesson={handleCompleteLesson}
+        onCompleteLesson={async () => {}}
       />
-      <LessonCompleteModal
-        visible={showCongratsModal}
-        onClose={() => setShowCongratsModal(false)}
-        xp={earnedXp}
-      />
+      <LessonCompleteModal visible={false} onClose={() => {}} xp={0} />
     </NavigationContainer>
   );
 }
