@@ -20,6 +20,10 @@ const TOPIC_NAME_MAP = {
   3: "Key Market Terms",
 };
 const TOPIC_IDS = Object.keys(TOPIC_NAME_MAP).map((id) => Number(id));
+const formatSubtopicName = (name = "") => {
+  const cleaned = String(name).replace(/_/g, " ").trim();
+  return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "";
+};
 
 export default function Learn({ learningPath = [], userData = {}, navigation }) {
   const [backendPath, setBackendPath] = useState([]);
@@ -55,7 +59,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
               subtopic_summary: subtopic?.subtopic_summary?.summary_content ?? null,
               lessons: contents.map((content, cIdx) => ({
                 id: content.content_id,
-                title: content.title.replace(/^\s*\S+\s*:\s*/, ""),
+                title: formatStepTitle(content.title),
                 status: cIdx === 0 ? "unlocked" : "completed",
                 type: "lesson",
                 xp: 0,
@@ -167,7 +171,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                       ...lessons,
                       {
                         id: `summary-${unit.subtopic_id}`,
-                        title: "Subtopic Summary",
+                        title: "Summary",
                         status: "unlocked",
                         type: "summary",
                       },
@@ -185,7 +189,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                     >
                       <View>
                         <Text style={styles.unitOverline}>UNIT {unit.unit}</Text>
-                        <Text style={styles.unitTitle}>{unit.subtopic_name}</Text>
+                        <Text style={styles.unitTitle}>{formatSubtopicName(unit.subtopic_name)}</Text>
                         {/* Progress Bar */}
                         <View style={styles.progressBarBackground}>
                           <View style={[styles.progressBarFill, { width: `${unitProgress}%` }]} />
@@ -231,9 +235,9 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                                     topicId: unit.topic_id,
                                     topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
                                     subtopicId: unit.subtopic_id,
-                                    subtopicName: unit.subtopic_name,
+                                    subtopicName: formatSubtopicName(unit.subtopic_name),
                                     contentId: lesson.id,
-                                    contentTitle: `${unit.subtopic_name} Summary`,
+                                    contentTitle: `${formatSubtopicName(unit.subtopic_name)} Summary`,
                                     difficulty: "Summary",
                                     summary: null,
                                     contentJson: unit.subtopic_summary,
@@ -322,8 +326,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   unitOverline: { fontSize: moderateScale(11), fontWeight: "700", letterSpacing: 1.2, color: "#94a3b8", marginBottom: 2 },
-  unitTitle: { fontSize: moderateScale(18), fontWeight: "800", color: "#f8fafc" },
-  unitIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#e5e7eb", alignItems: "center", justifyContent: "center" },
+  unitTitle: { fontSize: moderateScale(16), color: "#f8fafc" },
 
   progressBarBackground: { height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: verticalScale(8), overflow: 'hidden' },
   progressBarFill: { height: 6, backgroundColor: '#22c55e', borderRadius: 3 },
