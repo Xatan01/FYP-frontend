@@ -36,6 +36,8 @@ export default function QuizContent({
   onChangeAnswer,
   isDraggingOption,
   onDragStateChange,
+  isProfilingQuiz = false,
+  onFinishAndContinue,
 }) {
   return (
     <SafeAreaView style={styles.safe}>
@@ -92,9 +94,15 @@ export default function QuizContent({
               <TouchableOpacity style={[styles.navBtn, styles.secondaryBtn]} onPress={onReviewAnswers}>
                 <Text style={styles.secondaryBtnText}>Review answers</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={onRestart}>
-                <Text style={styles.primaryBtnText}>Restart</Text>
-              </TouchableOpacity>
+              {isProfilingQuiz ? (
+                <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={onFinishAndContinue}>
+                  <Text style={styles.primaryBtnText}>Unlock subtopic</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={onRestart}>
+                  <Text style={styles.primaryBtnText}>Restart</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         ) : null}

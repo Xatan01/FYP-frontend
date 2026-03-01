@@ -17,6 +17,12 @@ export function fetchQuizBySubtopicAndDifficulty(subtopicId, difficulty) {
   return apiFetch(path);
 }
 
+export function fetchProfilingQuiz(subtopicId) {
+  const path = `/quiz/profiling/${subtopicId}`;
+  console.log(`[learning] fetching profiling quiz`, { subtopicId, path });
+  return apiFetch(path);
+}
+
 export async function fetchAvailableTopics({ maxTopicId = 3 } = {}) {
   const ids = Array.from({ length: maxTopicId }, (_, i) => i + 1);
   console.log(`[learning] scanning topics`, {

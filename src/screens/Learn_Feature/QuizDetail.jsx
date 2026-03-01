@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchQuizBySubtopicAndDifficulty } from "../../api/learning";
+import { fetchProfilingQuiz, fetchQuizBySubtopicAndDifficulty } from "../../api/learning";
 import QuizContent from "./quiz_components/QuizContent";
 import { formatSubtopicName, normalizeQuestion } from "./quiz_components/quizUtils";
 
@@ -10,6 +10,8 @@ export default function QuizDetail({ route, navigation }) {
     subtopicId,
     difficulty = "basic",
     lessonTitle,
+    quizMode = "lesson",
+    onProfilingComplete,
   } = route.params || {};
 
   const [loading, setLoading] = useState(true);
@@ -19,6 +21,7 @@ export default function QuizDetail({ route, navigation }) {
   const [answers, setAnswers] = useState({});
   const [finished, setFinished] = useState(false);
   const [isDraggingOption, setIsDraggingOption] = useState(false);
+  const isProfilingQuiz = String(quizMode).trim().toLowerCase() === "profiling";
 
   const subtitle = useMemo(() => {
     const topic = topicName ? String(topicName).trim() : "";
@@ -43,7 +46,9 @@ export default function QuizDetail({ route, navigation }) {
       setCurrentIndex(0);
       setAnswers({});
 
-      const data = await fetchQuizBySubtopicAndDifficulty(subtopicId, difficulty);
+      const data = isProfilingQuiz
+        ? await fetchProfilingQuiz(subtopicId)
+        : await fetchQuizBySubtopicAndDifficulty(subtopicId, difficulty);
       const normalized = Array.isArray(data) ? data.map(normalizeQuestion) : [];
       setQuestions(normalized);
     } catch (err) {
@@ -52,7 +57,7 @@ export default function QuizDetail({ route, navigation }) {
     } finally {
       setLoading(false);
     }
-  }, [subtopicId, difficulty]);
+  }, [subtopicId, difficulty, isProfilingQuiz]);
 
   useEffect(() => {
     loadQuiz();
@@ -90,6 +95,13 @@ export default function QuizDetail({ route, navigation }) {
     setCurrentIndex(0);
   };
 
+  const handleFinishAndContinue = async () => {
+    if (typeof onProfilingComplete === "function") {
+      await Promise.resolve(onProfilingComplete());
+    }
+    navigation.goBack();
+  };
+
   return (
     <QuizContent
       navigation={navigation}
@@ -113,6 +125,8 @@ export default function QuizDetail({ route, navigation }) {
       onChangeAnswer={handleChangeAnswer}
       isDraggingOption={isDraggingOption}
       onDragStateChange={setIsDraggingOption}
+      isProfilingQuiz={isProfilingQuiz}
+      onFinishAndContinue={handleFinishAndContinue}
     />
   );
 }
