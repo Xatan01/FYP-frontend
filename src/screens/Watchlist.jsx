@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Switch,
   ActivityIndicator,
   Image,
 } from "react-native";
@@ -16,7 +15,6 @@ import {
   addWatchlistItem,
   fetchWatchlist,
   removeWatchlistItem,
-  updateWatchlistFavorite,
 } from "../api/watchlist";
 import {
   fetchMarketQuotes,
@@ -174,24 +172,6 @@ export default function Watchlist({ navigation }) {
     }
   };
 
-  const toggleFavorite = async (id) => {
-    const current = watchlist.find((item) => item.id === id);
-    if (!current) return;
-    const next = !current.favorite;
-
-    setWatchlist((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, favorite: next } : item))
-    );
-    try {
-      await updateWatchlistFavorite(id, next);
-    } catch (err) {
-      setWatchlist((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, favorite: !next } : item))
-      );
-      setError(err?.message || "Failed to update favorite.");
-    }
-  };
-
   const renderQuote = (symbolKey) => {
     const item = quotesBySymbol[symbolKey];
     const price = Number.isFinite(item?.price) ? `$${Number(item.price).toFixed(2)}` : "$--";
@@ -283,10 +263,13 @@ export default function Watchlist({ navigation }) {
 
           <Text style={styles.sectionHeader}>Popular</Text>
           {popular.map((item) => {
-            const added = watchlistSymbolSet.has(item.symbol);
             const q = renderQuote(item.symbol);
             return (
-              <View key={item.symbol} style={styles.popularCard}>
+              <TouchableOpacity
+                key={item.symbol}
+                style={styles.popularCard}
+                onPress={() => navigation.navigate("Charting", { symbol: item.symbol })}
+              >
                 <View style={styles.rowLeft}>
                   {renderLogo(item.symbol)}
                   <View style={{ flex: 1 }}>
@@ -299,15 +282,8 @@ export default function Watchlist({ navigation }) {
                 <View style={styles.right}>
                   <Text style={styles.price}>{q.price}</Text>
                   <Text style={[styles.change, { color: q.changeColor }]}>{q.change}</Text>
-                  <TouchableOpacity
-                    style={[styles.quickAddBtn, added && styles.quickAddBtnDisabled]}
-                    disabled={added || submitting}
-                    onPress={() => handleAdd(item.symbol, item.name || item.symbol)}
-                  >
-                    <Text style={styles.quickAddText}>{added ? "Added" : "Add"}</Text>
-                  </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
 
@@ -342,10 +318,6 @@ export default function Watchlist({ navigation }) {
                 <View style={styles.right}>
                   <Text style={styles.price}>{q.price}</Text>
                   <Text style={[styles.change, { color: q.changeColor }]}>{q.change}</Text>
-                  <View style={styles.alertRow}>
-                    <Text style={styles.alertLabel}>Favorite</Text>
-                    <Switch value={s.favorite} onValueChange={() => toggleFavorite(s.id)} />
-                  </View>
                   <TouchableOpacity style={styles.removeButton} onPress={() => handleRemove(s.id)}>
                     <Text style={styles.removeText}>Remove</Text>
                   </TouchableOpacity>

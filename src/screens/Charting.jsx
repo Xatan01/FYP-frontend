@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
-  ScrollView,
   View,
   Text,
   TouchableOpacity,
@@ -11,9 +10,130 @@ import {
 import { LineChart, TrendingUp } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { fetchMarketChart } from "../api/market";
+import TradingViewChart from "../components/TradingViewChart";
 
 const ranges = ["1D", "1W", "1M", "1Y"];
 const indicators = ["MA(20)", "RSI", "MACD", "Volume"];
+
+function toTimestampMs(point) {
+  const direct = Number(point?.timestamp);
+  if (Number.isFinite(direct)) return direct;
+  const parsed = Date.parse(point?.time || point?.t || "");
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toTvTime(ts) {
+  const sec = Math.floor(Number(ts) / 1000);
+  return Number.isFinite(sec) ? sec : null;
+}
+
+function buildSma(candles, period) {
+  let sum = 0;
+  const out = [];
+  for (let i = 0; i < candles.length; i += 1) {
+    const close = candles[i].close;
+    sum += close;
+    if (i >= period) sum -= candles[i - period].close;
+    if (i >= period - 1) {
+      out.push({ time: candles[i].time, value: sum / period });
+    }
+  }
+  return out;
+}
+
+function buildRsi(candles, period = 14) {
+  if (candles.length <= period) return [];
+  let gainSum = 0;
+  let lossSum = 0;
+
+  for (let i = 1; i <= period; i += 1) {
+    const delta = candles[i].close - candles[i - 1].close;
+    if (delta >= 0) gainSum += delta;
+    else lossSum += Math.abs(delta);
+  }
+
+  let avgGain = gainSum / period;
+  let avgLoss = lossSum / period;
+  const out = [];
+
+  const firstRs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+  out.push({
+    time: candles[period].time,
+    value: avgLoss === 0 ? 100 : 100 - 100 / (1 + firstRs),
+  });
+
+  for (let i = period + 1; i < candles.length; i += 1) {
+    const delta = candles[i].close - candles[i - 1].close;
+    const gain = delta > 0 ? delta : 0;
+    const loss = delta < 0 ? Math.abs(delta) : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    const value = avgLoss === 0 ? 100 : 100 - 100 / (1 + rs);
+    out.push({ time: candles[i].time, value });
+  }
+
+  return out;
+}
+
+function buildEma(values, period) {
+  if (values.length < period) return [];
+  const k = 2 / (period + 1);
+  let ema = 0;
+  for (let i = 0; i < period; i += 1) ema += values[i];
+  ema /= period;
+
+  const out = new Array(values.length).fill(null);
+  out[period - 1] = ema;
+
+  for (let i = period; i < values.length; i += 1) {
+    ema = values[i] * k + ema * (1 - k);
+    out[i] = ema;
+  }
+  return out;
+}
+
+function buildMacd(candles) {
+  const closes = candles.map((c) => c.close);
+  const ema12 = buildEma(closes, 12);
+  const ema26 = buildEma(closes, 26);
+  const macdRaw = closes.map((_, i) => {
+    if (ema12[i] == null || ema26[i] == null) return null;
+    return ema12[i] - ema26[i];
+  });
+
+  const validMacd = macdRaw.filter((v) => v != null);
+  const signalValid = buildEma(validMacd, 9);
+
+  const signalRaw = new Array(macdRaw.length).fill(null);
+  let ptr = 0;
+  for (let i = 0; i < macdRaw.length; i += 1) {
+    if (macdRaw[i] == null) continue;
+    signalRaw[i] = signalValid[ptr];
+    ptr += 1;
+  }
+
+  const macdLine = [];
+  const signalLine = [];
+  const histogram = [];
+  for (let i = 0; i < candles.length; i += 1) {
+    const m = macdRaw[i];
+    const s = signalRaw[i];
+    if (m == null) continue;
+    macdLine.push({ time: candles[i].time, value: m });
+    if (s != null) {
+      signalLine.push({ time: candles[i].time, value: s });
+      const h = m - s;
+      histogram.push({
+        time: candles[i].time,
+        value: h,
+        color: h >= 0 ? "rgba(34,197,94,0.55)" : "rgba(239,68,68,0.55)",
+      });
+    }
+  }
+
+  return { macdLine, signalLine, histogram };
+}
 
 export default function Charting({ route }) {
   const routeSymbol = String(route?.params?.symbol || "").trim().toUpperCase();
@@ -23,21 +143,23 @@ export default function Charting({ route }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState("Not updated");
-  const [chartPoints, setChartPoints] = useState([]);
+  const [candles, setCandles] = useState([]);
   const [price, setPrice] = useState(null);
   const [changePercent, setChangePercent] = useState(null);
 
-  const maxValue = useMemo(() => {
-    if (!chartPoints.length) return 1;
-    return Math.max(...chartPoints, 1);
-  }, [chartPoints]);
+  const showMA = activeIndicators.includes("MA(20)");
+  const showRSI = activeIndicators.includes("RSI");
+  const showMACD = activeIndicators.includes("MACD");
+  const showVolume = activeIndicators.includes("Volume");
+
+  const maSeries = useMemo(() => buildSma(candles, 20), [candles]);
+  const rsiSeries = useMemo(() => buildRsi(candles, 14), [candles]);
+  const macd = useMemo(() => buildMacd(candles), [candles]);
 
   const toggleIndicator = (label) => {
-    if (activeIndicators.includes(label)) {
-      setActiveIndicators(activeIndicators.filter((item) => item !== label));
-      return;
-    }
-    setActiveIndicators([...activeIndicators, label]);
+    setActiveIndicators((prev) =>
+      prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]
+    );
   };
 
   const loadChart = async () => {
@@ -45,10 +167,36 @@ export default function Charting({ route }) {
     setError("");
     try {
       const data = await fetchMarketChart(symbol, range);
-      const points = (data?.points || [])
-        .map((item) => Number(item?.c))
-        .filter((value) => Number.isFinite(value));
-      setChartPoints(points);
+      const mapped = (data?.points || [])
+        .map((point) => {
+          const ts = toTimestampMs(point);
+          const time = toTvTime(ts);
+          return {
+            timestamp: ts,
+            time,
+            open: Number(point?.open),
+            high: Number(point?.high),
+            low: Number(point?.low),
+            close: Number(point?.close ?? point?.c),
+            volume: Number(point?.volume ?? point?.v),
+          };
+        })
+        .filter(
+          (c) =>
+            Number.isFinite(c.timestamp) &&
+            Number.isFinite(c.time) &&
+            Number.isFinite(c.open) &&
+            Number.isFinite(c.high) &&
+            Number.isFinite(c.low) &&
+            Number.isFinite(c.close)
+        )
+        .map((c) => ({
+          ...c,
+          volume: Number.isFinite(c.volume) ? c.volume : null,
+        }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+      setCandles(mapped);
       setPrice(Number.isFinite(Number(data?.price)) ? Number(data.price) : null);
       setChangePercent(
         Number.isFinite(Number(data?.change_percent)) ? Number(data.change_percent) : null
@@ -57,7 +205,7 @@ export default function Charting({ route }) {
       setLastUpdated(updated.toLocaleTimeString());
     } catch (err) {
       setError(err?.message || "Failed to load chart.");
-      setChartPoints([]);
+      setCandles([]);
       setPrice(null);
       setChangePercent(null);
     } finally {
@@ -66,18 +214,12 @@ export default function Charting({ route }) {
   };
 
   useEffect(() => {
-    if (routeSymbol && routeSymbol !== symbol) {
-      setSymbol(routeSymbol);
-    }
+    if (routeSymbol && routeSymbol !== symbol) setSymbol(routeSymbol);
   }, [routeSymbol, symbol]);
 
   useEffect(() => {
     loadChart();
   }, [range, symbol]);
-
-  const handleRefresh = () => {
-    loadChart();
-  };
 
   const priceText = price === null ? "--" : `$${price.toFixed(2)}`;
   const changeText =
@@ -87,15 +229,11 @@ export default function Charting({ route }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ padding: scale(16) }}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={[styles.container, { padding: scale(16) }]}>
         <View style={styles.headerRow}>
           <Text style={styles.header}>Charting Tools</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+            <TouchableOpacity style={styles.refreshButton} onPress={loadChart}>
               <Text style={styles.refreshText}>Refresh</Text>
             </TouchableOpacity>
             <View style={styles.badge}>
@@ -104,6 +242,7 @@ export default function Charting({ route }) {
             </View>
           </View>
         </View>
+
         <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
         {!!error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -125,39 +264,31 @@ export default function Charting({ route }) {
               {ranges.map((r) => {
                 const active = r === range;
                 return (
-                  <TouchableOpacity
-                    key={r}
-                    style={styles.rangeButton}
-                    onPress={() => setRange(r)}
-                  >
-                    <Text
-                      style={[styles.rangeText, active && styles.rangeTextActive]}
-                    >
-                      {r}
-                    </Text>
+                  <TouchableOpacity key={r} style={styles.rangeButton} onPress={() => setRange(r)}>
+                    <Text style={[styles.rangeText, active && styles.rangeTextActive]}>{r}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <View style={styles.chartArea}>
-              {chartPoints.length ? (
-                chartPoints.map((value, index) => (
-                  <View key={`${value}-${index}`} style={styles.barWrap}>
-                    <View
-                      style={[
-                        styles.bar,
-                        { height: `${(value / maxValue) * 100}%` },
-                      ]}
-                    />
-                  </View>
-                ))
-              ) : (
-                <View style={styles.emptyChartWrap}>
-                  <Text style={styles.emptyChartText}>No chart data available.</Text>
-                </View>
-              )}
-            </View>
+            {candles.length ? (
+              <TradingViewChart
+                candles={candles}
+                maSeries={maSeries}
+                rsiSeries={rsiSeries}
+                macdLine={macd.macdLine}
+                macdSignal={macd.signalLine}
+                macdHistogram={macd.histogram}
+                showMA={showMA}
+                showRSI={showRSI}
+                showMACD={showMACD}
+                showVolume={showVolume}
+              />
+            ) : (
+              <View style={styles.emptyChartWrap}>
+                <Text style={styles.emptyChartText}>No chart data available.</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -172,12 +303,7 @@ export default function Charting({ route }) {
                   style={[styles.indicator, active && styles.indicatorActive]}
                   onPress={() => toggleIndicator(indicator)}
                 >
-                  <Text
-                    style={[
-                      styles.indicatorText,
-                      active && styles.indicatorTextActive,
-                    ]}
-                  >
+                  <Text style={[styles.indicatorText, active && styles.indicatorTextActive]}>
                     {indicator}
                   </Text>
                 </TouchableOpacity>
@@ -185,7 +311,7 @@ export default function Charting({ route }) {
             })}
           </View>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -249,7 +375,7 @@ const styles = StyleSheet.create({
   },
   symbol: { fontSize: moderateScale(16), fontWeight: "700", color: "#0f172a" },
   price: { fontSize: moderateScale(14), fontWeight: "600", color: "#0f172a" },
-  change: { fontSize: moderateScale(12), color: "#16a34a", marginLeft: "auto" },
+  change: { fontSize: moderateScale(12), marginLeft: "auto" },
   rangeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -265,20 +391,8 @@ const styles = StyleSheet.create({
   },
   rangeText: { fontSize: moderateScale(12), color: "#475569", fontWeight: "600" },
   rangeTextActive: { color: "#2563eb" },
-  chartArea: {
-    height: verticalScale(160),
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: scale(6),
-  },
-  barWrap: { flex: 1, alignItems: "center" },
-  bar: {
-    width: "100%",
-    borderRadius: 8,
-    backgroundColor: "#2563eb",
-  },
   emptyChartWrap: {
-    flex: 1,
+    minHeight: verticalScale(220),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -319,3 +433,4 @@ const styles = StyleSheet.create({
   loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
   loadingText: { color: "#2563eb", fontSize: moderateScale(12) },
 });
+

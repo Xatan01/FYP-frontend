@@ -4,6 +4,7 @@ import RootNavigator from "./src/navigation/RootNavigator";
 import { StatusBar } from "expo-status-bar";
 import { enableScreens } from "react-native-screens";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import LessonCompleteModal from "./src/components/LessonCompleteModal";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
@@ -76,13 +77,16 @@ function AppInner() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   loading: {
     flex: 1,
     alignItems: "center",
