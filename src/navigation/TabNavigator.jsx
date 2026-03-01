@@ -39,9 +39,12 @@ export default function TabNavigator({
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#2563eb",
+        tabBarActiveTintColor: "#93c5fd",
         tabBarInactiveTintColor: "#64748b",
         tabBarStyle: {
+          backgroundColor: "#0f172a",
+          borderTopColor: "#1e293b",
+          borderTopWidth: 1,
           height: verticalScale(60),
           paddingBottom: verticalScale(5),
           paddingTop: verticalScale(5),
