@@ -271,13 +271,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
       const previousSubtopicCompleted =
         !previousUnitInTopic || isSubtopicCompleted(previousUnitInTopic, normalizedProgressState);
       const canUnlock = !isUnlocked && previousSubtopicCompleted;
-      const firstUnitInTopic = sourcePath.find((candidate) => candidate.topic_id === unit.topic_id);
-      const isFirstUnitOfTopic =
-        firstUnitInTopic &&
-        String(firstUnitInTopic.subtopic_id) === String(unit.subtopic_id);
       const requiresProfiling =
-        unit.topic_id === TOPIC_IDS[0] &&
-        isFirstUnitOfTopic &&
         normalizedProgressState.profilingCompletedSubtopics[subtopicKey] !== true;
 
       let foundCurrentStep = false;
