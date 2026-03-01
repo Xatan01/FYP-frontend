@@ -8,7 +8,7 @@ export function fetchLessonByTopicId(topicId) {
 
 export function fetchQuizBySubtopicAndDifficulty(subtopicId, difficulty) {
   const normalizedDifficulty = String(difficulty ?? "basic").trim().toLowerCase();
-  const path = `/quiz/${subtopicId}/${normalizedDifficulty}`;
+  const path = `/quiz/${subtopicId}/${normalizedDifficulty}/start`;
   console.log(`[learning] fetching quiz`, {
     subtopicId,
     difficulty: normalizedDifficulty,
@@ -18,9 +18,37 @@ export function fetchQuizBySubtopicAndDifficulty(subtopicId, difficulty) {
 }
 
 export function fetchProfilingQuiz(subtopicId) {
-  const path = `/quiz/profiling/${subtopicId}`;
+  const path = `/quiz/profiling/${subtopicId}/start`;
   console.log(`[learning] fetching profiling quiz`, { subtopicId, path });
   return apiFetch(path);
+}
+
+export function initializeSubtopicProgress(topicId, subtopicId) {
+  const path = `/lesson/progress/${topicId}/${subtopicId}/init`;
+  console.log(`[learning] initializing subtopic progress`, { topicId, subtopicId, path });
+  return apiFetch(path, { method: "POST" });
+}
+
+export function submitProfilingQuiz(subtopicId, answers) {
+  const path = `/quiz/profiling/${subtopicId}/submit`;
+  console.log(`[learning] submitting profiling quiz`, {
+    subtopicId,
+    answersCount: Object.keys(answers || {}).length,
+    path,
+  });
+  return apiFetch(path, { method: "POST", body: answers });
+}
+
+export function submitQuizBySubtopicAndDifficulty(subtopicId, difficulty, answers) {
+  const normalizedDifficulty = String(difficulty ?? "basic").trim().toLowerCase();
+  const path = `/quiz/${subtopicId}/${normalizedDifficulty}/submit`;
+  console.log(`[learning] submitting quiz`, {
+    subtopicId,
+    difficulty: normalizedDifficulty,
+    answersCount: Object.keys(answers || {}).length,
+    path,
+  });
+  return apiFetch(path, { method: "POST", body: answers });
 }
 
 export async function fetchAvailableTopics({ maxTopicId = 3 } = {}) {

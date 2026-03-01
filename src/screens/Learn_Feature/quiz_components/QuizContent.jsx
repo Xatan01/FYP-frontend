@@ -23,6 +23,8 @@ export default function QuizContent({
   error,
   totalQuestions,
   finished,
+  submitting = false,
+  submitResult = null,
   answeredCount,
   currentIndex,
   currentQuestion,
@@ -90,6 +92,17 @@ export default function QuizContent({
             <Text style={styles.questionSummary}>
               You answered {answeredCount} out of {totalQuestions} questions.
             </Text>
+            {!isProfilingQuiz && submitResult ? (
+              <Text style={styles.questionSummary}>
+                Score: {submitResult.total_correct}/{submitResult.total_questions} ·{" "}
+                {submitResult.passed ? "Passed" : "Not passed"} · Points: {submitResult.points_awarded}
+              </Text>
+            ) : null}
+            {isProfilingQuiz && submitResult?.assigned_difficulty ? (
+              <Text style={styles.questionSummary}>
+                Assigned difficulty: {formatDifficulty(submitResult.assigned_difficulty)}
+              </Text>
+            ) : null}
             <View style={styles.footerActions}>
               <TouchableOpacity style={[styles.navBtn, styles.secondaryBtn]} onPress={onReviewAnswers}>
                 <Text style={styles.secondaryBtnText}>Review answers</Text>
@@ -146,9 +159,17 @@ export default function QuizContent({
               >
                 <Text style={styles.secondaryBtnText}>Previous</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={onNext}>
+              <TouchableOpacity
+                style={[styles.navBtn, styles.primaryBtn, submitting && styles.btnDisabled]}
+                onPress={onNext}
+                disabled={submitting}
+              >
                 <Text style={styles.primaryBtnText}>
-                  {currentIndex === totalQuestions - 1 ? "Finish" : "Next"}
+                  {currentIndex === totalQuestions - 1
+                    ? submitting
+                      ? "Submitting..."
+                      : "Finish"
+                    : "Next"}
                 </Text>
               </TouchableOpacity>
             </View>

@@ -285,7 +285,6 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
                 ]}
               >
                 <Text style={styles.optionChipText}>{option}</Text>
-                {assignedLeft ? <Text style={styles.optionChipMeta}>Assigned</Text> : null}
               </Animated.View>
             );
           })}

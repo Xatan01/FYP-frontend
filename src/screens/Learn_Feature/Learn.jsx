@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -116,7 +116,7 @@ function isSubtopicCompleted(unit, progressState) {
   return lessons.every((lesson) => completedLessonIds.has(String(lesson.id)));
 }
 
-export default function Learn({ learningPath = [], userData = {}, navigation }) {
+export default function Learn({ learningPath = [], userData = {}, navigation, route }) {
   const [backendPath, setBackendPath] = useState([]);
   const [topicPanels, setTopicPanels] = useState(() =>
     Object.fromEntries(
@@ -342,6 +342,23 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
     [updateProgressState]
   );
 
+  useEffect(() => {
+    const completedSubtopicId = route?.params?.profilingCompletedSubtopicId;
+    const completedAt = route?.params?.profilingCompletedAt;
+    if (!completedSubtopicId || !completedAt) return;
+
+    unlockSubtopic(completedSubtopicId, { profilingCompleted: true });
+    navigation.setParams?.({
+      profilingCompletedSubtopicId: undefined,
+      profilingCompletedAt: undefined,
+    });
+  }, [
+    navigation,
+    route?.params?.profilingCompletedAt,
+    route?.params?.profilingCompletedSubtopicId,
+    unlockSubtopic,
+  ]);
+
   const completeLesson = useCallback(
     (unit, lesson) => {
       const subtopicKey = String(unit?.subtopic_id ?? "");
@@ -384,8 +401,6 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
 
   const handleLessonPress = (unit, lesson) => {
     if (lesson.status === "locked") return;
-
-    completeLesson(unit, lesson);
 
     const mappedTopicName = TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name;
 
@@ -437,6 +452,9 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
       difficulty: String(lesson.difficulty ?? "basic").trim().toLowerCase(),
       lessonTitle: lesson.title,
       stepIndex: index + 1,
+      onQuizPassed: () => {
+        completeLesson(unit, lesson);
+      },
     });
   };
 
