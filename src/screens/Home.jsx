@@ -40,6 +40,8 @@ const aiRecommendation = {
 
 export default function Home({ userData, learningPath, navigation }) {
   const { width } = useWindowDimensions();
+  const safeUser = userData ?? { name: "User", xp: 0, streak: 0, league: "Bronze" };
+  const safeLearningPath = Array.isArray(learningPath) ? learningPath : [];
 
   const quickActions = [
     { label: "AI Insights", icon: Sparkles, route: "AiInsights", tone: "#f59e0b" },
@@ -54,8 +56,9 @@ export default function Home({ userData, learningPath, navigation }) {
 
   // Find the next lesson for the "Continue" button
   let nextLesson = null;
-  for (const unit of learningPath) {
-    const lesson = unit.lessons.find((l) => l.status === "unlocked");
+  for (const unit of safeLearningPath) {
+    const lessons = Array.isArray(unit?.lessons) ? unit.lessons : [];
+    const lesson = lessons.find((l) => l?.status === "unlocked");
     if (lesson) {
       nextLesson = lesson;
       break;
@@ -70,14 +73,14 @@ export default function Home({ userData, learningPath, navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.greeting}>
-          Welcome back, <Text style={styles.name}>{userData.name}</Text>
+          Welcome back, <Text style={styles.name}>{safeUser.name}</Text>
         </Text>
         
         {/* --- Gamified Stats Bar --- */}
         <View style={styles.statsBar}>
           <View style={styles.statItem}>
             <Star size={20} color="#f59e0b" />
-            <Text style={styles.statText}>{userData.xp} XP</Text>
+            <Text style={styles.statText}>{safeUser.xp} XP</Text>
           </View>
           <View style={styles.statItem}>
             <LottieView
@@ -86,14 +89,14 @@ export default function Home({ userData, learningPath, navigation }) {
               loop
               style={{ width: 28, height: 28 }}
             />
-            <Text style={styles.statText}>{userData.streak} Day Streak</Text>
+            <Text style={styles.statText}>{safeUser.streak} Day Streak</Text>
           </View>
           <TouchableOpacity
             style={styles.statItem}
             onPress={() => navigation.navigate("Profile")} // Go to Profile
           >
             <Shield size={20} color="#16a34a" />
-            <Text style={styles.statText}>{userData.league} League</Text>
+            <Text style={styles.statText}>{safeUser.league} League</Text>
           </TouchableOpacity>
         </View>
 

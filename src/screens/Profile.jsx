@@ -52,6 +52,7 @@ const leaderboard = [
 
 export default function Profile({ userData }) {
   const { logout } = useAuth();
+  const safeUser = userData ?? { name: "User", xp: 0, streak: 0, league: "Bronze" };
   const myUser = leaderboard.find((u) => u.name.includes("You"));
   
   return (
@@ -65,7 +66,7 @@ export default function Profile({ userData }) {
           source={{ uri: "https://placehold.co/120x120/2563eb/ffffff?text=A" }}
           style={styles.avatar}
         />
-        <Text style={styles.name}>{userData.name}</Text>
+        <Text style={styles.name}>{safeUser.name}</Text>
         <Text style={styles.joined}>Joined December 2024</Text>
 
         <TouchableOpacity
@@ -79,7 +80,7 @@ export default function Profile({ userData }) {
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Star size={24} color="#f59e0b" />
-            <Text style={styles.statValue}>{userData.xp}</Text>
+            <Text style={styles.statValue}>{safeUser.xp}</Text>
             <Text style={styles.statLabel}>Total XP</Text>
           </View>
           <View style={styles.statCard}>
@@ -89,12 +90,12 @@ export default function Profile({ userData }) {
               loop
               style={{ width: 32, height: 32 }}
             />
-            <Text style={styles.statValue}>{userData.streak}</Text>
+            <Text style={styles.statValue}>{safeUser.streak}</Text>
             <Text style={styles.statLabel}>Day Streak</Text>
           </View>
           <View style={styles.statCard}>
             <Shield size={24} color="#16a34a" />
-            <Text style={styles.statValue}>{userData.league}</Text>
+            <Text style={styles.statValue}>{safeUser.league}</Text>
             <Text style={styles.statLabel}>League</Text>
           </View>
         </View>
@@ -148,7 +149,7 @@ export default function Profile({ userData }) {
         
         <View style={styles.leaderboard}>
           {leaderboard.map((user, index) => {
-            const isMe = user.id === myUser.id;
+            const isMe = user.id === myUser?.id;
             return (
               <View
                 key={user.id}
