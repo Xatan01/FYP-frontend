@@ -6,6 +6,17 @@ export function fetchLessonByTopicId(topicId) {
   return apiFetch(path);
 }
 
+export function fetchQuizBySubtopicAndDifficulty(subtopicId, difficulty) {
+  const normalizedDifficulty = String(difficulty ?? "basic").trim().toLowerCase();
+  const path = `/quiz/${subtopicId}/${normalizedDifficulty}`;
+  console.log(`[learning] fetching quiz`, {
+    subtopicId,
+    difficulty: normalizedDifficulty,
+    path,
+  });
+  return apiFetch(path);
+}
+
 export async function fetchAvailableTopics({ maxTopicId = 3 } = {}) {
   const ids = Array.from({ length: maxTopicId }, (_, i) => i + 1);
   console.log(`[learning] scanning topics`, {

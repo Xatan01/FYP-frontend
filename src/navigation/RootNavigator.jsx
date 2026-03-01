@@ -15,6 +15,7 @@ import Community from "../screens/Community";
 import AlertsSettings from "../screens/AlertsSettings";
 import Portfolio from "../screens/Portfolio";
 import LessonDetail from "../screens/Learn_Feature/LessonDetail";
+import QuizDetail from "../screens/Learn_Feature/QuizDetail";
 import { useAuth } from "../context/AuthContext";
 
 const Stack = createNativeStackNavigator();
@@ -50,6 +51,7 @@ export default function RootNavigator({
               <LessonDetail {...props} onCompleteLesson={onCompleteLesson} />
             )}
           </Stack.Screen>
+          <Stack.Screen name="QuizDetail" component={QuizDetail} />
 
           <Stack.Screen name="AiInsights" component={AiInsights} />
           <Stack.Screen name="News" component={News} />

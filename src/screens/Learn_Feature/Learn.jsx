@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { scale, verticalScale, moderateScale } from "../../styles/responsive";
 import { LinearGradient } from "expo-linear-gradient";
-import { BookOpen, Lock, Award, Star, TrendingUp, Flame, NotebookPen } from "lucide-react-native";
+import { BookOpen, Lock, Award, Star, TrendingUp, Flame, NotebookPen, Check } from "lucide-react-native";
 import * as Haptics from 'expo-haptics';
 import { fetchLessonByTopicId } from "../../api/learning";
 
@@ -165,6 +165,26 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
     handleLessonPress(unit, lesson);
   };
 
+  const handleQuizPress = (unit, lesson, index) => {
+    if (lesson.status === "locked" || lesson.type === "summary") return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate("QuizDetail", {
+      topicId: unit.topic_id,
+      topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
+      subtopicId: unit.subtopic_id,
+      subtopicName: formatSubtopicName(unit.subtopic_name),
+      difficulty: String(lesson.difficulty ?? "basic").trim().toLowerCase(),
+      lessonTitle: lesson.title,
+      stepIndex: index + 1,
+    });
+  };
+
+  const handleAnswerExplanationPress = (unit, lesson) => {
+    if (lesson.status === "locked" || lesson.type === "summary") return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -270,13 +290,33 @@ export default function Learn({ learningPath = [], userData = {}, navigation }) 
                                 />
                                 <TouchableOpacity
                                   activeOpacity={0.85}
-                                  disabled
+                                  disabled={lesson.status === "locked"}
                                   style={[
                                     styles.quizNode,
                                     styles.quizNodePlaceholder,
                                   ]}
+                                  onPress={() => handleQuizPress(unit, lesson, index)}
                                 >
                                   <NotebookPen size={22} color="#f8fafc" />
+                                </TouchableOpacity>
+
+                                <LinearGradient
+                                  colors={["#64748b", "#1e293b"]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 0 }}
+                                  style={styles.explanationBranchLine}
+                                />
+
+                                <TouchableOpacity
+                                  activeOpacity={0.85}
+                                  disabled={lesson.status === "locked"}
+                                  style={[
+                                    styles.quizNode,
+                                    styles.quizNodePlaceholder,
+                                  ]}
+                                  onPress={() => handleAnswerExplanationPress(unit, lesson)}
+                                >
+                                  <Check size={22} color="#f8fafc" />
                                 </TouchableOpacity>
                               </View>
                             )}
@@ -369,7 +409,11 @@ const styles = StyleSheet.create({
     fontFamily: "Courier",
   },
 
-  pathContainer: { position: "relative", paddingHorizontal: "10%" },
+  pathContainer: {
+    position: "relative",
+    paddingHorizontal: "10%",
+    transform: [{ translateX: -scale(55) }],
+  },
   nodeWrapper: { marginBottom: verticalScale(22), alignItems: "center", width: "100%" },
   nodeRow: { width: "100%", alignItems: "center", justifyContent: "center", position: "relative" },
   leftAlign: { alignItems: "flex-start" },
@@ -393,6 +437,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   quizBranchLine: { width: scale(24), height: 2, borderRadius: 1 },
+  explanationBranchLine: { width: scale(14), height: 2, borderRadius: 1 },
   quizNode: {
     width: scale(52),
     height: scale(52),
@@ -408,6 +453,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   quizNodePlaceholder: { backgroundColor: "#0f172a", borderColor: "#334155" },
-  nodeLabel: { marginTop: verticalScale(8), width: scale(170), textAlign: "center", fontSize: moderateScale(13), fontWeight: "600", color: "#e5e7eb" },
+  nodeLabel: {
+    marginTop: verticalScale(8),
+    width: scale(188),
+    textAlign: "center",
+    fontSize: moderateScale(13),
+    lineHeight: moderateScale(18),
+    fontWeight: "600",
+    color: "#e5e7eb",
+    alignSelf: "center",
+  },
   nodeLabelLocked: { color: "#64748b" },
 });
