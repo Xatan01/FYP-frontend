@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -10,17 +10,27 @@ import {
 } from "react-native";
 import { LineChart, TrendingUp } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import { fetchMarketChart } from "../api/market";
 
 const ranges = ["1D", "1W", "1M", "1Y"];
 const indicators = ["MA(20)", "RSI", "MACD", "Volume"];
-const chartPoints = [18, 22, 16, 28, 24, 30, 26, 34, 29, 36];
 
-export default function Charting() {
+export default function Charting({ route }) {
+  const routeSymbol = String(route?.params?.symbol || "").trim().toUpperCase();
+  const [symbol, setSymbol] = useState(routeSymbol || "AAPL");
   const [range, setRange] = useState(ranges[1]);
   const [activeIndicators, setActiveIndicators] = useState(["MA(20)", "Volume"]);
-  const [loading, setLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState("Just now");
-  const maxValue = Math.max(...chartPoints);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("Not updated");
+  const [chartPoints, setChartPoints] = useState([]);
+  const [price, setPrice] = useState(null);
+  const [changePercent, setChangePercent] = useState(null);
+
+  const maxValue = useMemo(() => {
+    if (!chartPoints.length) return 1;
+    return Math.max(...chartPoints, 1);
+  }, [chartPoints]);
 
   const toggleIndicator = (label) => {
     if (activeIndicators.includes(label)) {
@@ -30,13 +40,50 @@ export default function Charting() {
     setActiveIndicators([...activeIndicators, label]);
   };
 
-  const handleRefresh = () => {
+  const loadChart = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLastUpdated("Just now");
+    setError("");
+    try {
+      const data = await fetchMarketChart(symbol, range);
+      const points = (data?.points || [])
+        .map((item) => Number(item?.c))
+        .filter((value) => Number.isFinite(value));
+      setChartPoints(points);
+      setPrice(Number.isFinite(Number(data?.price)) ? Number(data.price) : null);
+      setChangePercent(
+        Number.isFinite(Number(data?.change_percent)) ? Number(data.change_percent) : null
+      );
+      const updated = data?.updated_at ? new Date(data.updated_at) : new Date();
+      setLastUpdated(updated.toLocaleTimeString());
+    } catch (err) {
+      setError(err?.message || "Failed to load chart.");
+      setChartPoints([]);
+      setPrice(null);
+      setChangePercent(null);
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
+
+  useEffect(() => {
+    if (routeSymbol && routeSymbol !== symbol) {
+      setSymbol(routeSymbol);
+    }
+  }, [routeSymbol, symbol]);
+
+  useEffect(() => {
+    loadChart();
+  }, [range, symbol]);
+
+  const handleRefresh = () => {
+    loadChart();
+  };
+
+  const priceText = price === null ? "--" : `$${price.toFixed(2)}`;
+  const changeText =
+    changePercent === null ? "--" : `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(2)}%`;
+  const changeTone =
+    changePercent === null ? "#64748b" : changePercent >= 0 ? "#16a34a" : "#dc2626";
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -58,6 +105,7 @@ export default function Charting() {
           </View>
         </View>
         <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
+        {!!error && <Text style={styles.errorText}>{error}</Text>}
 
         {loading ? (
           <View style={styles.loading}>
@@ -68,9 +116,9 @@ export default function Charting() {
           <View style={styles.card}>
             <View style={styles.symbolRow}>
               <LineChart size={18} color="#2563eb" />
-              <Text style={styles.symbol}>DBS</Text>
-              <Text style={styles.price}>$35.40</Text>
-              <Text style={styles.change}>+1.2%</Text>
+              <Text style={styles.symbol}>{symbol}</Text>
+              <Text style={styles.price}>{priceText}</Text>
+              <Text style={[styles.change, { color: changeTone }]}>{changeText}</Text>
             </View>
 
             <View style={styles.rangeRow}>
@@ -93,16 +141,22 @@ export default function Charting() {
             </View>
 
             <View style={styles.chartArea}>
-              {chartPoints.map((value, index) => (
-                <View key={`${value}-${index}`} style={styles.barWrap}>
-                  <View
-                    style={[
-                      styles.bar,
-                      { height: `${(value / maxValue) * 100}%` },
-                    ]}
-                  />
+              {chartPoints.length ? (
+                chartPoints.map((value, index) => (
+                  <View key={`${value}-${index}`} style={styles.barWrap}>
+                    <View
+                      style={[
+                        styles.bar,
+                        { height: `${(value / maxValue) * 100}%` },
+                      ]}
+                    />
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyChartWrap}>
+                  <Text style={styles.emptyChartText}>No chart data available.</Text>
                 </View>
-              ))}
+              )}
             </View>
           </View>
         )}
@@ -174,6 +228,12 @@ const styles = StyleSheet.create({
     color: "#64748b",
     marginBottom: verticalScale(10),
   },
+  errorText: {
+    alignSelf: "flex-start",
+    color: "#dc2626",
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(10),
+  },
   card: {
     backgroundColor: "#f8fafc",
     borderRadius: 16,
@@ -216,6 +276,15 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 8,
     backgroundColor: "#2563eb",
+  },
+  emptyChartWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyChartText: {
+    color: "#64748b",
+    fontSize: moderateScale(12),
   },
   secondaryCard: {
     marginTop: verticalScale(16),
