@@ -72,75 +72,77 @@ export default function Register({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Start building your investing streak.</Text>
+        <View style={styles.card}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Start building your investing streak.</Text>
 
-        <View style={styles.inputGroup}>
-          <User size={18} color="#64748b" />
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            placeholderTextColor="#94a3b8"
-            value={name}
-            onChangeText={setName}
-          />
-        </View>
-        <View style={styles.inputGroup}>
-          <Mail size={18} color="#64748b" />
-          <TextInput
-            style={styles.input}
-            placeholder="Email address"
-            placeholderTextColor="#94a3b8"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
-        <View style={styles.inputGroup}>
-          <Lock size={18} color="#64748b" />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#94a3b8"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
-        <Text style={styles.passwordHint}>
-          8+ chars, 1 uppercase letter, 1 special character.
-        </Text>
-        <View style={styles.inputGroup}>
-          <Lock size={18} color="#64748b" />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm password"
-            placeholderTextColor="#94a3b8"
-            secureTextEntry
-            value={confirm}
-            onChangeText={setConfirm}
-          />
-        </View>
-        {!!error && <Text style={styles.error}>{error}</Text>}
+          <View style={styles.inputGroup}>
+            <User size={18} color="#94a3b8" />
+            <TextInput
+              style={styles.input}
+              placeholder="Username"
+              placeholderTextColor="#64748b"
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Mail size={18} color="#94a3b8" />
+            <TextInput
+              style={styles.input}
+              placeholder="Email address"
+              placeholderTextColor="#64748b"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Lock size={18} color="#94a3b8" />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#64748b"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+          <Text style={styles.passwordHint}>
+            8+ chars, 1 uppercase letter, 1 special character.
+          </Text>
+          <View style={styles.inputGroup}>
+            <Lock size={18} color="#94a3b8" />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm password"
+              placeholderTextColor="#64748b"
+              secureTextEntry
+              value={confirm}
+              onChangeText={setConfirm}
+            />
+          </View>
+          {!!error && <Text style={styles.error}>{error}</Text>}
 
-        <TouchableOpacity
-          style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
-          onPress={handleRegister}
-          disabled={!canSubmit || isSubmitting}
-        >
-          <LinearGradient colors={["#16a34a", "#15803d"]} style={styles.primaryFill}>
-            <Text style={styles.primaryText}>
-              {isSubmitting ? "Creating account..." : "Register"}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={styles.footerLink}>Sign in</Text>
+          <TouchableOpacity
+            style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
+            onPress={handleRegister}
+            disabled={!canSubmit || isSubmitting}
+          >
+            <LinearGradient colors={["#2563eb", "#1d4ed8"]} style={styles.primaryFill}>
+              <Text style={styles.primaryText}>
+                {isSubmitting ? "Creating account..." : "Register"}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.footerLink}>Sign in</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -148,47 +150,54 @@ export default function Register({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc" },
+  safe: { flex: 1, backgroundColor: "#020617" },
   container: {
     flex: 1,
     padding: scale(20),
     justifyContent: "center",
   },
+  card: {
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "#1e293b",
+    borderRadius: 20,
+    padding: scale(16),
+  },
   title: {
     fontSize: moderateScale(26),
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#e2e8f0",
     marginBottom: verticalScale(6),
   },
   subtitle: {
     fontSize: moderateScale(13),
-    color: "#64748b",
+    color: "#94a3b8",
     marginBottom: verticalScale(20),
   },
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#111827",
     borderRadius: 14,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#1e293b",
     marginBottom: verticalScale(12),
   },
   input: {
     flex: 1,
     marginLeft: scale(8),
     fontSize: moderateScale(14),
-    color: "#0f172a",
+    color: "#e2e8f0",
   },
   error: {
-    color: "#dc2626",
+    color: "#fca5a5",
     fontSize: moderateScale(12),
     marginBottom: verticalScale(10),
   },
   passwordHint: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: moderateScale(11),
     marginBottom: verticalScale(10),
   },
@@ -211,10 +220,10 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(18),
     gap: scale(6),
   },
-  footerText: { color: "#64748b", fontSize: moderateScale(12) },
-  footerLink: { color: "#2563eb", fontSize: moderateScale(12), fontWeight: "600" },
+  footerText: { color: "#94a3b8", fontSize: moderateScale(12) },
+  footerLink: { color: "#93c5fd", fontSize: moderateScale(12), fontWeight: "600" },
   success: {
-    color: "#16a34a",
+    color: "#86efac",
     fontSize: moderateScale(12),
     marginBottom: verticalScale(10),
   },

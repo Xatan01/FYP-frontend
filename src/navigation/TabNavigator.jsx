@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
   Home as HomeIcon,
   BookOpen,
-  Eye,
+  LineChart,
   MessageCircle,
   User,
 } from "lucide-react-native";
@@ -11,7 +11,7 @@ import { verticalScale, moderateScale } from "../styles/responsive";
 
 import Home from "../screens/Home";
 import Learn from "../screens/Learn_Feature/Learn";
-import Watchlist from "../screens/Watchlist";
+import VirtualMarket from "../screens/VirtualMarket_Feature/VirtualMarket";
 import Consult from "../screens/Consult";
 import Profile from "../screens/Profile";
 
@@ -21,6 +21,8 @@ export default function TabNavigator({
   userData = {},
   learningPath = [],
   onCompleteLesson,
+  themePreference = "dark",
+  onThemePreferenceChange = () => {},
 }) {
   const safeLearningPath = Array.isArray(learningPath) ? learningPath : [];
   const safeUserData = userData ?? {
@@ -35,15 +37,17 @@ export default function TabNavigator({
     Array.isArray(unit?.lessons) && unit.lessons.some((l) => l.status === "unlocked")
   );
 
+  const isLight = themePreference === "light";
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#93c5fd",
-        tabBarInactiveTintColor: "#64748b",
+        tabBarActiveTintColor: isLight ? "#1d4ed8" : "#93c5fd",
+        tabBarInactiveTintColor: isLight ? "#64748b" : "#64748b",
         tabBarStyle: {
-          backgroundColor: "#0f172a",
-          borderTopColor: "#1e293b",
+          backgroundColor: isLight ? "#ffffff" : "#0f172a",
+          borderTopColor: isLight ? "#e2e8f0" : "#1e293b",
           borderTopWidth: 1,
           height: verticalScale(60),
           paddingBottom: verticalScale(5),
@@ -88,10 +92,11 @@ export default function TabNavigator({
       </Tab.Screen>
 
       <Tab.Screen
-        name="Watchlist"
-        component={Watchlist}
+        name="VirtualMarket"
+        component={VirtualMarket}
         options={{
-          tabBarIcon: ({ color }) => <Eye color={color} size={24} />,
+          tabBarLabel: "Market",
+          tabBarIcon: ({ color }) => <LineChart color={color} size={24} />,
         }}
       />
 
@@ -110,7 +115,14 @@ export default function TabNavigator({
         }}
       >
         {/* The hub for badges, progress, and leagues */}
-        {(props) => <Profile {...props} userData={safeUserData} />}
+        {(props) => (
+          <Profile
+            {...props}
+            userData={safeUserData}
+            themePreference={themePreference}
+            onThemePreferenceChange={onThemePreferenceChange}
+          />
+        )}
       </Tab.Screen>
     </Tab.Navigator>
   );

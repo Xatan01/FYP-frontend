@@ -8,6 +8,8 @@ import AiInsights from "../screens/AiInsights";
 import News from "../screens/News";
 import Charting from "../screens/Charting";
 import TradingJournal from "../screens/TradingJournal";
+import Watchlist from "../screens/Watchlist";
+import Friends from "../screens/Friends";
 import MarketTrends from "../screens/MarketTrends";
 import ChatConsult from "../screens/ChatConsult";
 import ConsultationBooking from "../screens/ConsultationBooking";
@@ -25,6 +27,8 @@ export default function RootNavigator({
   userData,
   learningPath,
   onCompleteLesson,
+  themePreference = "dark",
+  onThemePreferenceChange = () => {},
 }) {
   const { session, loading } = useAuth();
 
@@ -43,6 +47,8 @@ export default function RootNavigator({
                 userData={userData}
                 learningPath={learningPath}
                 onCompleteLesson={onCompleteLesson}
+                themePreference={themePreference}
+                onThemePreferenceChange={onThemePreferenceChange}
               />
             )}
           </Stack.Screen>
@@ -58,6 +64,8 @@ export default function RootNavigator({
           <Stack.Screen name="News" component={News} />
           <Stack.Screen name="Charting" component={Charting} />
           <Stack.Screen name="TradingJournal" component={TradingJournal} />
+          <Stack.Screen name="Watchlist" component={Watchlist} />
+          <Stack.Screen name="Friends" component={Friends} />
           <Stack.Screen name="MarketTrends" component={MarketTrends} />
           <Stack.Screen name="ChatConsult" component={ChatConsult} />
           <Stack.Screen

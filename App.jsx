@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { StatusBar } from "expo-status-bar";
 import { enableScreens } from "react-native-screens";
@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import LessonCompleteModal from "./src/components/LessonCompleteModal";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { apiFetch } from "./src/api/client";
+import { fetchProfileSettings } from "./src/api/profile";
 
 enableScreens();
 
@@ -26,6 +27,7 @@ function AppInner() {
 
   const [userData, setUserData] = useState(null);
   const [learningPath, setLearningPath] = useState([]);
+  const [themePreference, setThemePreference] = useState("dark");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +36,7 @@ function AppInner() {
     if (!session) {
       setUserData(null);
       setLearningPath([]);
+      setThemePreference("dark");
       setLoading(false);
       return;
     }
@@ -41,34 +44,66 @@ function AppInner() {
     (async () => {
       try {
         setLoading(true);
-        const me = await apiFetch("/auth/me");
+        const [me, settings] = await Promise.all([
+          apiFetch("/auth/me"),
+          fetchProfileSettings().catch(() => null),
+        ]);
         setUserData(normalizeUser(me?.user, session?.user?.email));
         setLearningPath([]);
+        setThemePreference(settings?.theme_preference === "light" ? "light" : "dark");
       } catch {
         setUserData(normalizeUser(null, session?.user?.email));
         setLearningPath([]);
+        setThemePreference("dark");
       } finally {
         setLoading(false);
       }
     })();
   }, [session, authLoading]);
 
+  const navigationTheme =
+    themePreference === "light"
+      ? {
+          ...DefaultTheme,
+          colors: {
+            ...DefaultTheme.colors,
+            background: "#f8fafc",
+            card: "#ffffff",
+            text: "#0f172a",
+            border: "#e2e8f0",
+          },
+        }
+      : {
+          ...DarkTheme,
+          colors: {
+            ...DarkTheme.colors,
+            background: "#020617",
+            card: "#0f172a",
+            text: "#e2e8f0",
+            border: "#1e293b",
+          },
+        };
+
   if (authLoading || loading) {
     return (
-      <View style={styles.loading}>
+      <View style={[styles.loading, themePreference === "light" ? styles.loadingLight : styles.loadingDark]}>
         <ActivityIndicator />
-        <Text>Loading...</Text>
+        <Text style={themePreference === "light" ? styles.loadingTextLight : styles.loadingTextDark}>
+          Loading...
+        </Text>
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
+    <NavigationContainer theme={navigationTheme}>
+      <StatusBar style={themePreference === "light" ? "dark" : "light"} />
       <RootNavigator
         userData={userData}
         learningPath={learningPath}
         onCompleteLesson={async () => {}}
+        themePreference={themePreference}
+        onThemePreferenceChange={setThemePreference}
       />
       <LessonCompleteModal visible={false} onClose={() => {}} xp={0} />
     </NavigationContainer>
@@ -92,6 +127,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#f8fafc",
   },
+  loadingLight: { backgroundColor: "#f8fafc" },
+  loadingDark: { backgroundColor: "#020617" },
+  loadingTextLight: { color: "#0f172a" },
+  loadingTextDark: { color: "#e2e8f0" },
 });

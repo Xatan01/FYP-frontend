@@ -1,127 +1,372 @@
-import React from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
+  ActivityIndicator,
+  Image,
 } from "react-native";
+import { MessageCircle, CalendarCheck2, Star } from "lucide-react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import {
-  scale,
-  verticalScale,
-  moderateScale,
-} from "../styles/responsive";
+  createConsultationBooking,
+  fetchConsultationBookings,
+  fetchConsultationExperts,
+} from "../api/consultation";
 
-// Your original mock data
-const advisors = [
-  {
-    name: "Sarah Lee",
-    specialty: "Wealth Management",
-    avatar: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-  },
-  {
-    name: "Jonathan Tan",
-    specialty: "REIT & Property Investing",
-    avatar: "https://cdn-icons-png.flaticon.com/512/2202/2202112.png",
-  },
-];
+function toMoney(amount, currency = "USD") {
+  const numeric = Number(amount);
+  if (!Number.isFinite(numeric)) return `${currency} --`;
+  return `${currency} ${numeric.toFixed(0)}/hr`;
+}
+
+function initialsFromName(name = "") {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "EX";
+  return `${parts[0][0] || ""}${parts[1]?.[0] || ""}`.toUpperCase();
+}
 
 export default function Consult({ navigation }) {
+  const [experts, setExperts] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeExpertId, setActiveExpertId] = useState(null);
+
+  const latestBookingByExpert = useMemo(() => {
+    const map = new Map();
+    bookings.forEach((booking) => {
+      const expertId = Number(booking?.expert?.expert_id);
+      if (!Number.isFinite(expertId)) return;
+      if (!map.has(expertId)) {
+        map.set(expertId, booking);
+      }
+    });
+    return map;
+  }, [bookings]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [expertsRes, bookingsRes] = await Promise.all([
+        fetchConsultationExperts(),
+        fetchConsultationBookings(),
+      ]);
+      setExperts(Array.isArray(expertsRes?.items) ? expertsRes.items : []);
+      setBookings(Array.isArray(bookingsRes?.items) ? bookingsRes.items : []);
+    } catch (err) {
+      setError(err?.message || "Failed to load consultation experts.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const handleOpenChat = async (expert) => {
+    const expertId = Number(expert?.expert_id);
+    if (!Number.isFinite(expertId)) return;
+
+    setActiveExpertId(expertId);
+    setError("");
+
+    try {
+      let booking = latestBookingByExpert.get(expertId);
+      if (!booking) {
+        booking = await createConsultationBooking({
+          expertId,
+          topic: "",
+          preferredTime: null,
+          initialMessage: "",
+        });
+        setBookings((prev) => [booking, ...prev]);
+      }
+
+      navigation.navigate("ChatConsult", {
+        bookingId: booking.booking_id,
+        expertName: booking?.expert?.display_name || expert.display_name,
+      });
+    } catch (err) {
+      setError(err?.message || "Unable to open chat.");
+    } finally {
+      setActiveExpertId(null);
+    }
+  };
+
+  const handleOpenBooking = (expert) => {
+    const expertId = Number(expert?.expert_id);
+    if (!Number.isFinite(expertId)) return;
+
+    const booking = latestBookingByExpert.get(expertId) || null;
+    navigation.navigate("ConsultationBooking", {
+      expert,
+      booking,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ padding: scale(16) }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.header}>Book a Consultation</Text>
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color="#38bdf8" />
+          <Text style={styles.loadingText}>Loading consultation experts...</Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ padding: scale(16), paddingBottom: verticalScale(36) }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.header}>Consult Experts</Text>
+          <Text style={styles.subheader}>Chat or book directly with DB-backed advisors.</Text>
 
-        {advisors.map((a, i) => (
-          <TouchableOpacity key={i} style={styles.card} activeOpacity={0.8}>
-            <Image source={{ uri: a.avatar }} style={styles.avatar} />
-            <View style={styles.textContainer}>
-              <Text style={styles.name}>{a.name}</Text>
-              <Text style={styles.specialty}>{a.specialty}</Text>
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={styles.chatButton}
-                  onPress={() => navigation.navigate("ChatConsult")}
-                >
-                  <Text style={styles.chatText}>Chat</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.bookButton}
-                  onPress={() => navigation.navigate("ConsultationBooking")}
-                >
-                  <Text style={styles.bookText}>Book</Text>
-                </TouchableOpacity>
+          {!!error && <Text style={styles.error}>{error}</Text>}
+
+          {experts.map((expert) => {
+            const booking = latestBookingByExpert.get(Number(expert.expert_id));
+            const booked = Boolean(booking?.booked);
+            const busy = activeExpertId === expert.expert_id;
+
+            return (
+              <View key={expert.expert_id} style={styles.card}>
+                <View style={styles.topRow}>
+                  {expert.avatar_url ? (
+                    <Image source={{ uri: expert.avatar_url }} style={styles.avatar} />
+                  ) : (
+                    <View style={styles.avatarFallback}>
+                      <Text style={styles.avatarFallbackText}>{initialsFromName(expert.display_name)}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.profileCopy}>
+                    <Text style={styles.name}>{expert.display_name}</Text>
+                    <Text style={styles.designation}>{expert.designation}</Text>
+                    <Text style={styles.specialty}>{expert.specialty}</Text>
+                    <View style={styles.metaRow}>
+                      <View style={styles.ratingPill}>
+                        <Star size={12} color="#facc15" fill="#facc15" />
+                        <Text style={styles.ratingText}>{Number(expert.rating || 0).toFixed(1)}</Text>
+                      </View>
+                      <Text style={styles.metaText}>{expert.years_experience} yrs</Text>
+                      <Text style={styles.metaText}>{toMoney(expert.hourly_rate, expert.currency)}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[styles.chatButton, busy && styles.buttonDisabled]}
+                    onPress={() => handleOpenChat(expert)}
+                    disabled={busy}
+                  >
+                    <MessageCircle size={15} color="#bfdbfe" />
+                    <Text style={styles.chatText}>{busy ? "Opening..." : "Chat"}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.bookButton, busy && styles.buttonDisabled]}
+                    onPress={() => handleOpenBooking(expert)}
+                    disabled={busy}
+                  >
+                    <CalendarCheck2 size={15} color="#dcfce7" />
+                    <Text style={styles.bookText}>{booked ? "Booked" : "Book"}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {booked ? (
+                  <View style={styles.badgeRow}>
+                    <Text style={[styles.statusBadge, styles.bookedBadge]}>Booked Lead</Text>
+                  </View>
+                ) : null}
               </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            );
+          })}
+
+          {!experts.length && <Text style={styles.empty}>No experts found. Seed experts in DB first.</Text>}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
-// Your original styles, with minor tweaks
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
+  safe: { flex: 1, backgroundColor: "#020617" },
   container: { flex: 1 },
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: scale(8),
+  },
+  loadingText: {
+    color: "#94a3b8",
+    fontSize: moderateScale(12),
+  },
   header: {
-    fontSize: moderateScale(22),
-    fontWeight: "bold",
-    color: "#0f172a",
-    marginBottom: verticalScale(12),
+    fontSize: moderateScale(24),
+    fontWeight: "900",
+    color: "#f8fafc",
+  },
+  subheader: {
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(14),
+    color: "#94a3b8",
+    fontSize: moderateScale(12),
+  },
+  error: {
+    color: "#fca5a5",
+    marginBottom: verticalScale(10),
+    fontSize: moderateScale(12),
   },
   card: {
-    flexDirection: "row",
-    backgroundColor: "#f8fafc",
-    borderRadius: scale(16),
-    padding: scale(16),
-    marginBottom: verticalScale(12),
-    alignItems: "center",
+    backgroundColor: "#0f172a",
+    borderColor: "#1e293b",
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderRadius: scale(16),
+    padding: scale(14),
+    marginBottom: verticalScale(12),
+  },
+  topRow: {
+    flexDirection: "row",
+    gap: scale(10),
   },
   avatar: {
-    width: scale(56),
-    height: scale(56),
-    borderRadius: scale(28),
-    marginRight: scale(12),
+    width: scale(54),
+    height: scale(54),
+    borderRadius: scale(27),
   },
-  textContainer: { flex: 1 },
-  name: { fontSize: moderateScale(15), fontWeight: "600", color: "#0f172a" },
-  specialty: { fontSize: moderateScale(12), color: "#475569", marginTop: 2 },
-  buttonRow: {
+  avatarFallback: {
+    width: scale(54),
+    height: scale(54),
+    borderRadius: scale(27),
+    backgroundColor: "#1e3a8a",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#1d4ed8",
+  },
+  avatarFallbackText: {
+    color: "#bfdbfe",
+    fontSize: moderateScale(14),
+    fontWeight: "800",
+  },
+  profileCopy: {
+    flex: 1,
+  },
+  name: {
+    color: "#f8fafc",
+    fontSize: moderateScale(15),
+    fontWeight: "800",
+  },
+  designation: {
+    color: "#cbd5e1",
+    fontSize: moderateScale(12),
+    marginTop: verticalScale(2),
+  },
+  specialty: {
+    color: "#93c5fd",
+    fontSize: moderateScale(12),
+    marginTop: verticalScale(2),
+    fontWeight: "600",
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: scale(8),
+    marginTop: verticalScale(6),
+  },
+  ratingPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(4),
+    backgroundColor: "#1f2937",
+    borderColor: "#374151",
+    borderWidth: 1,
+    borderRadius: scale(999),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(3),
+  },
+  ratingText: {
+    color: "#fef9c3",
+    fontSize: moderateScale(11),
+    fontWeight: "700",
+  },
+  metaText: {
+    color: "#94a3b8",
+    fontSize: moderateScale(11),
+  },
+  actionRow: {
     flexDirection: "row",
     gap: scale(8),
-    marginTop: verticalScale(8),
+    marginTop: verticalScale(10),
   },
   chatButton: {
-    alignSelf: "flex-start",
-    backgroundColor: "#2563eb",
+    flex: 1,
+    backgroundColor: "#1e3a8a",
+    borderColor: "#2563eb",
+    borderWidth: 1,
     borderRadius: scale(10),
-    paddingVertical: verticalScale(6),
-    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: scale(6),
   },
   chatText: {
-    color: "#fff",
+    color: "#dbeafe",
+    fontWeight: "700",
     fontSize: moderateScale(12),
-    fontWeight: "600",
   },
   bookButton: {
-    alignSelf: "flex-start",
-    backgroundColor: "#16a34a",
+    flex: 1,
+    backgroundColor: "#14532d",
+    borderColor: "#16a34a",
+    borderWidth: 1,
     borderRadius: scale(10),
-    paddingVertical: verticalScale(6),
-    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: scale(6),
   },
   bookText: {
-    color: "#fff",
+    color: "#dcfce7",
+    fontWeight: "700",
     fontSize: moderateScale(12),
-    fontWeight: "600",
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  badgeRow: {
+    marginTop: verticalScale(8),
+    alignItems: "flex-start",
+  },
+  statusBadge: {
+    fontSize: moderateScale(11),
+    fontWeight: "700",
+    borderRadius: scale(999),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(3),
+    overflow: "hidden",
+  },
+  bookedBadge: {
+    color: "#86efac",
+    backgroundColor: "#052e16",
+  },
+  empty: {
+    marginTop: verticalScale(10),
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: moderateScale(12),
   },
 });
