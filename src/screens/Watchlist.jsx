@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -9,21 +9,84 @@ import {
   StyleSheet,
   ActivityIndicator,
   Image,
+  Animated,
 } from "react-native";
+import { Heart } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
-import {
-  addWatchlistItem,
-  fetchWatchlist,
-  removeWatchlistItem,
-} from "../api/watchlist";
-import {
-  fetchMarketQuotes,
-  fetchPopularMarketQuotes,
-  searchMarketSymbols,
-} from "../api/market";
+import { addWatchlistItem, fetchWatchlist, removeWatchlistItem } from "../api/watchlist";
+import { fetchMarketQuotes, fetchPopularMarketQuotes, searchMarketSymbols } from "../api/market";
 
 function getLogoUrl(symbol) {
   return `https://financialmodelingprep.com/image-stock/${encodeURIComponent(symbol)}.png`;
+}
+
+function SymbolRow({
+  symbol,
+  name,
+  quote,
+  logo,
+  liked,
+  pending,
+  onPressChart,
+  onToggleHeart,
+  tone = "default",
+}) {
+  const heartScale = useRef(new Animated.Value(1)).current;
+
+  const animateHeart = () => {
+    heartScale.setValue(0.8);
+    Animated.sequence([
+      Animated.spring(heartScale, {
+        toValue: 1.2,
+        useNativeDriver: true,
+        friction: 4,
+        tension: 130,
+      }),
+      Animated.spring(heartScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5,
+        tension: 110,
+      }),
+    ]).start();
+  };
+
+  const handleHeartPress = () => {
+    animateHeart();
+    onToggleHeart();
+  };
+
+  return (
+    <View style={[styles.rowCard, tone === "saved" ? styles.rowCardSaved : styles.rowCardPopular]}>
+      <TouchableOpacity style={styles.rowLeft} onPress={onPressChart}>
+        {logo}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.symbol}>{symbol}</Text>
+          <Text style={styles.name} numberOfLines={1}>
+            {name || symbol}
+          </Text>
+        </View>
+      </TouchableOpacity>
+
+      <View style={styles.right}>
+        <Text style={styles.price}>{quote.price}</Text>
+        <Text style={[styles.change, { color: quote.changeColor }]}>{quote.change}</Text>
+        <TouchableOpacity
+          style={[styles.heartBtn, pending && styles.heartBtnDisabled]}
+          onPress={handleHeartPress}
+          disabled={pending}
+        >
+          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+            <Heart
+              size={18}
+              color={liked ? "#fb7185" : "#94a3b8"}
+              fill={liked ? "#fb7185" : "none"}
+            />
+          </Animated.View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 }
 
 export default function Watchlist({ navigation }) {
@@ -32,18 +95,24 @@ export default function Watchlist({ navigation }) {
   const [quotesBySymbol, setQuotesBySymbol] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [symbol, setSymbol] = useState("");
+  const [symbolQuery, setSymbolQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
   const [refreshingQuotes, setRefreshingQuotes] = useState(false);
+  const [pendingSymbols, setPendingSymbols] = useState({});
   const [logoFailed, setLogoFailed] = useState({});
+  const searchRequestSeq = useRef(0);
 
-  const watchlistSymbols = useMemo(
-    () => watchlist.map((item) => item.symbol),
-    [watchlist]
-  );
-  const watchlistSymbolSet = useMemo(() => new Set(watchlistSymbols), [watchlistSymbols]);
+  const watchlistBySymbol = useMemo(() => {
+    const map = new Map();
+    watchlist.forEach((item) => {
+      const key = String(item.symbol || "").toUpperCase();
+      if (key) map.set(key, item);
+    });
+    return map;
+  }, [watchlist]);
+
+  const watchlistSymbols = useMemo(() => Array.from(watchlistBySymbol.keys()), [watchlistBySymbol]);
 
   const mergeQuotes = (items) => {
     const next = {};
@@ -77,9 +146,8 @@ export default function Watchlist({ navigation }) {
 
       const saved = (watchlistRows || []).map((item) => ({
         id: item.id,
-        symbol: item.symbol,
+        symbol: String(item.symbol || "").toUpperCase(),
         name: item.display_name || item.symbol,
-        favorite: Boolean(item.is_favorite),
       }));
       setWatchlist(saved);
 
@@ -103,9 +171,12 @@ export default function Watchlist({ navigation }) {
   }, []);
 
   useEffect(() => {
-    const query = symbol.trim();
+    const query = String(symbolQuery || "").trim();
+    const requestId = searchRequestSeq.current + 1;
+    searchRequestSeq.current = requestId;
     if (query.length < 2) {
       setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
 
@@ -113,66 +184,82 @@ export default function Watchlist({ navigation }) {
       setSearchLoading(true);
       try {
         const res = await searchMarketSymbols(query, 8);
-        setSearchResults(Array.isArray(res?.results) ? res.results : []);
+        const rawResults = Array.isArray(res?.results) ? res.results : [];
+        const dedupedBySymbol = [];
+        const seen = new Set();
+        rawResults.forEach((item) => {
+          const symbol = String(item?.symbol || "").trim().toUpperCase();
+          if (!symbol || seen.has(symbol)) return;
+          seen.add(symbol);
+          dedupedBySymbol.push({
+            ...item,
+            symbol,
+          });
+        });
+        if (requestId === searchRequestSeq.current) {
+          setSearchResults(dedupedBySymbol);
+        }
       } catch {
-        setSearchResults([]);
+        if (requestId === searchRequestSeq.current) {
+          setSearchResults([]);
+        }
       } finally {
-        setSearchLoading(false);
+        if (requestId === searchRequestSeq.current) {
+          setSearchLoading(false);
+        }
       }
     }, 280);
 
-    return () => clearTimeout(timer);
-  }, [symbol]);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [symbolQuery]);
 
-  const handleAdd = async (inputSymbol, inputName = "") => {
-    const cleanSymbol = String(inputSymbol || "").trim().toUpperCase();
-    if (!cleanSymbol || submitting || watchlistSymbolSet.has(cleanSymbol)) return;
+  const toggleWatchlist = async (symbol, displayName = "") => {
+    const cleanSymbol = String(symbol || "").trim().toUpperCase();
+    if (!cleanSymbol || pendingSymbols[cleanSymbol]) return false;
 
-    setSubmitting(true);
+    setPendingSymbols((prev) => ({ ...prev, [cleanSymbol]: true }));
     setError("");
     try {
-      const created = await addWatchlistItem(cleanSymbol, inputName);
-      const nextItem = {
-        id: created.id,
-        symbol: created.symbol,
-        name: created.display_name || created.symbol,
-        favorite: Boolean(created.is_favorite),
-      };
-      setWatchlist((prev) => [nextItem, ...prev]);
-      const quoteRes = await fetchMarketQuotes([nextItem.symbol]);
-      mergeQuotes(quoteRes?.items || []);
-    } catch (err) {
-      setError(err?.message || "Failed to add symbol.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleManualAdd = async () => {
-    await handleAdd(symbol, symbol);
-    setSymbol("");
-    setSearchResults([]);
-  };
-
-  const handleRemove = async (id) => {
-    setError("");
-    try {
-      const removed = watchlist.find((item) => item.id === id);
-      await removeWatchlistItem(id);
-      setWatchlist((prev) => prev.filter((item) => item.id !== id));
-      if (removed?.symbol) {
-        setQuotesBySymbol((prev) => {
-          const next = { ...prev };
-          delete next[removed.symbol];
-          return next;
-        });
+      const existing = watchlistBySymbol.get(cleanSymbol);
+      if (existing) {
+        await removeWatchlistItem(existing.id);
+        setWatchlist((prev) => prev.filter((item) => item.id !== existing.id));
+      } else {
+        const created = await addWatchlistItem(cleanSymbol, displayName || cleanSymbol);
+        const nextItem = {
+          id: created.id,
+          symbol: String(created.symbol || "").toUpperCase(),
+          name: created.display_name || created.symbol,
+        };
+        setWatchlist((prev) => [nextItem, ...prev]);
+        const quoteRes = await fetchMarketQuotes([nextItem.symbol]);
+        mergeQuotes(quoteRes?.items || []);
       }
+      return true;
     } catch (err) {
-      setError(err?.message || "Failed to remove symbol.");
+      setError(err?.message || "Failed to update watchlist.");
+      return false;
+    } finally {
+      setPendingSymbols((prev) => {
+        const next = { ...prev };
+        delete next[cleanSymbol];
+        return next;
+      });
     }
   };
 
-  const renderQuote = (symbolKey) => {
+  const handleSearchHeartToggle = async (symbol, displayName = "") => {
+    const updated = await toggleWatchlist(symbol, displayName);
+    if (updated) {
+      setSymbolQuery("");
+      setSearchResults([]);
+    }
+  };
+
+  const renderQuote = (symbol) => {
+    const symbolKey = String(symbol || "").toUpperCase();
     const item = quotesBySymbol[symbolKey];
     const price = Number.isFinite(item?.price) ? `$${Number(item.price).toFixed(2)}` : "$--";
     const change = Number.isFinite(item?.change_percent)
@@ -182,7 +269,8 @@ export default function Watchlist({ navigation }) {
     return { price, change, changeColor };
   };
 
-  const renderLogo = (symbolKey) => {
+  const renderLogo = (symbol) => {
+    const symbolKey = String(symbol || "").toUpperCase();
     if (logoFailed[symbolKey]) {
       return (
         <View style={styles.logoFallback}>
@@ -190,6 +278,7 @@ export default function Watchlist({ navigation }) {
         </View>
       );
     }
+
     return (
       <Image
         source={{ uri: getLogoUrl(symbolKey) }}
@@ -220,70 +309,53 @@ export default function Watchlist({ navigation }) {
           <Text style={styles.header}>Your Watchlist</Text>
           {!!error && <Text style={styles.error}>{error}</Text>}
 
-          <View style={styles.addCard}>
+          <View style={styles.searchCard}>
+            <Text style={styles.searchTitle}>Search Symbols</Text>
             <TextInput
-              style={styles.addInput}
+              style={styles.searchInput}
               placeholder="Search symbol (e.g. AAPL)"
               placeholderTextColor="#94a3b8"
-              value={symbol}
-              onChangeText={setSymbol}
+              value={symbolQuery}
+              onChangeText={setSymbolQuery}
               autoCapitalize="characters"
             />
-            <TouchableOpacity style={styles.addButton} onPress={handleManualAdd}>
-              <Text style={styles.addButtonText}>{submitting ? "Adding..." : "Add Symbol"}</Text>
-            </TouchableOpacity>
             {searchLoading ? <Text style={styles.searchHint}>Searching...</Text> : null}
+            {!searchLoading && symbolQuery.trim().length >= 2 && !searchResults.length ? (
+              <Text style={styles.searchHint}>No matching symbols found.</Text>
+            ) : null}
             {searchResults.slice(0, 6).map((item) => {
-              const added = watchlistSymbolSet.has(item.symbol);
+              const symbolKey = String(item.symbol || "").toUpperCase();
               return (
-                <TouchableOpacity
-                  key={`${item.symbol}-${item.exchange || "EX"}`}
-                  style={styles.searchItem}
-                  disabled={added || submitting}
-                  onPress={async () => {
-                    await handleAdd(item.symbol, item.name || item.symbol);
-                    setSymbol("");
-                    setSearchResults([]);
-                  }}
-                >
-                  <View style={styles.searchRowLeft}>
-                    {renderLogo(item.symbol)}
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.searchSymbol}>{item.symbol}</Text>
-                      <Text style={styles.searchName} numberOfLines={1}>
-                        {item.name || item.symbol}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.searchAction}>{added ? "Added" : "Add"}</Text>
-                </TouchableOpacity>
+                <SymbolRow
+                  key={`${symbolKey}-search`}
+                  symbol={symbolKey}
+                  name={item.name || symbolKey}
+                  quote={renderQuote(symbolKey)}
+                  logo={renderLogo(symbolKey)}
+                  liked={watchlistBySymbol.has(symbolKey)}
+                  pending={Boolean(pendingSymbols[symbolKey])}
+                  onPressChart={() => navigation.navigate("Charting", { symbol: symbolKey })}
+                  onToggleHeart={() => handleSearchHeartToggle(symbolKey, item.name || symbolKey)}
+                />
               );
             })}
           </View>
 
           <Text style={styles.sectionHeader}>Popular</Text>
           {popular.map((item) => {
-            const q = renderQuote(item.symbol);
+            const symbolKey = String(item.symbol || "").toUpperCase();
             return (
-              <TouchableOpacity
-                key={item.symbol}
-                style={styles.popularCard}
-                onPress={() => navigation.navigate("Charting", { symbol: item.symbol })}
-              >
-                <View style={styles.rowLeft}>
-                  {renderLogo(item.symbol)}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.symbol}>{item.symbol}</Text>
-                    <Text style={styles.name} numberOfLines={1}>
-                      {item.name || item.symbol}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.right}>
-                  <Text style={styles.price}>{q.price}</Text>
-                  <Text style={[styles.change, { color: q.changeColor }]}>{q.change}</Text>
-                </View>
-              </TouchableOpacity>
+              <SymbolRow
+                key={`${symbolKey}-popular`}
+                symbol={symbolKey}
+                name={item.name || symbolKey}
+                quote={renderQuote(symbolKey)}
+                logo={renderLogo(symbolKey)}
+                liked={watchlistBySymbol.has(symbolKey)}
+                pending={Boolean(pendingSymbols[symbolKey])}
+                onPressChart={() => navigation.navigate("Charting", { symbol: symbolKey })}
+                onToggleHeart={() => toggleWatchlist(symbolKey, item.name || symbolKey)}
+              />
             );
           })}
 
@@ -300,34 +372,23 @@ export default function Watchlist({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {watchlist.map((s) => {
-            const q = renderQuote(s.symbol);
-            return (
-              <TouchableOpacity
-                key={s.id}
-                style={styles.card}
-                onPress={() => navigation.navigate("Charting", { symbol: s.symbol })}
-              >
-                <View style={styles.rowLeft}>
-                  {renderLogo(s.symbol)}
-                  <View>
-                    <Text style={styles.symbol}>{s.symbol}</Text>
-                    <Text style={styles.name}>{s.name}</Text>
-                  </View>
-                </View>
-                <View style={styles.right}>
-                  <Text style={styles.price}>{q.price}</Text>
-                  <Text style={[styles.change, { color: q.changeColor }]}>{q.change}</Text>
-                  <TouchableOpacity style={styles.removeButton} onPress={() => handleRemove(s.id)}>
-                    <Text style={styles.removeText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+          {watchlist.map((item) => (
+            <SymbolRow
+              key={`${item.id}-saved`}
+              symbol={item.symbol}
+              name={item.name || item.symbol}
+              quote={renderQuote(item.symbol)}
+              logo={renderLogo(item.symbol)}
+              liked={true}
+              pending={Boolean(pendingSymbols[item.symbol])}
+              onPressChart={() => navigation.navigate("Charting", { symbol: item.symbol })}
+              onToggleHeart={() => toggleWatchlist(item.symbol, item.name || item.symbol)}
+              tone="saved"
+            />
+          ))}
 
-          {watchlist.length === 0 && (
-            <Text style={styles.emptyState}>No symbols saved yet. Use search above.</Text>
+          {!watchlist.length && (
+            <Text style={styles.emptyState}>Heart a symbol in Popular to add it here.</Text>
           )}
         </ScrollView>
       )}
@@ -356,7 +417,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
     marginBottom: verticalScale(8),
   },
-  addCard: {
+  searchCard: {
     backgroundColor: "#0f172a",
     borderRadius: scale(16),
     padding: scale(12),
@@ -364,7 +425,13 @@ const styles = StyleSheet.create({
     borderColor: "#1e293b",
     marginBottom: verticalScale(12),
   },
-  addInput: {
+  searchTitle: {
+    color: "#e2e8f0",
+    fontSize: moderateScale(13),
+    fontWeight: "700",
+    marginBottom: verticalScale(8),
+  },
+  searchInput: {
     backgroundColor: "#111827",
     borderRadius: scale(12),
     paddingVertical: verticalScale(8),
@@ -375,39 +442,11 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
     color: "#f8fafc",
   },
-  addButton: {
-    backgroundColor: "#2563eb",
-    borderRadius: scale(12),
-    paddingVertical: verticalScale(10),
-    alignItems: "center",
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: moderateScale(12),
-    fontWeight: "600",
-  },
   searchHint: {
     color: "#94a3b8",
     fontSize: moderateScale(11),
-    marginTop: verticalScale(6),
+    marginBottom: verticalScale(8),
   },
-  searchItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: verticalScale(8),
-    borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-  },
-  searchRowLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-  },
-  searchSymbol: { fontSize: moderateScale(13), fontWeight: "700", color: "#f8fafc" },
-  searchName: { fontSize: moderateScale(11), color: "#94a3b8", marginTop: 2 },
-  searchAction: { color: "#2563eb", fontSize: moderateScale(12), fontWeight: "700" },
   sectionHeader: {
     fontSize: moderateScale(14),
     color: "#e2e8f0",
@@ -431,33 +470,28 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(11),
     fontWeight: "700",
   },
-  popularCard: {
+  rowCard: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#0f172a",
     borderRadius: scale(14),
     borderWidth: 1,
     borderColor: "#1e293b",
     padding: scale(12),
     marginBottom: verticalScale(8),
   },
-  card: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  rowCardPopular: {
+    backgroundColor: "#0f172a",
+  },
+  rowCardSaved: {
     backgroundColor: "#111827",
-    borderRadius: scale(16),
-    padding: scale(16),
-    marginBottom: verticalScale(10),
-    borderWidth: 1,
-    borderColor: "#1e293b",
   },
   rowLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: scale(10),
     flex: 1,
+    marginRight: scale(10),
   },
   logo: {
     width: scale(28),
@@ -482,37 +516,21 @@ const styles = StyleSheet.create({
   name: { fontSize: moderateScale(12), color: "#94a3b8", marginTop: 2 },
   right: { alignItems: "flex-end" },
   price: { fontSize: moderateScale(14), fontWeight: "600", color: "#f8fafc" },
-  change: { fontSize: moderateScale(12), fontWeight: "500" },
-  quickAddBtn: {
+  change: { fontSize: moderateScale(12), fontWeight: "500", marginTop: verticalScale(1) },
+  heartBtn: {
     marginTop: verticalScale(6),
-    backgroundColor: "#dbeafe",
-    borderRadius: scale(8),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-  },
-  quickAddBtnDisabled: {
-    backgroundColor: "#e2e8f0",
-  },
-  quickAddText: {
-    color: "#1d4ed8",
-    fontSize: moderateScale(11),
-    fontWeight: "700",
-  },
-  alertRow: {
-    flexDirection: "row",
+    width: scale(30),
+    height: scale(30),
+    borderRadius: scale(15),
     alignItems: "center",
-    gap: scale(6),
-    marginTop: verticalScale(6),
+    justifyContent: "center",
+    backgroundColor: "#1f2937",
+    borderWidth: 1,
+    borderColor: "#334155",
   },
-  alertLabel: { fontSize: moderateScale(11), color: "#64748b" },
-  removeButton: {
-    marginTop: verticalScale(6),
-    backgroundColor: "#7f1d1d",
-    borderRadius: scale(8),
-    paddingVertical: verticalScale(4),
-    paddingHorizontal: scale(8),
+  heartBtnDisabled: {
+    opacity: 0.5,
   },
-  removeText: { color: "#fecaca", fontSize: moderateScale(11), fontWeight: "600" },
   emptyState: {
     textAlign: "center",
     color: "#64748b",

@@ -46,6 +46,7 @@ export default function Home({ userData, learningPath, navigation }) {
   const quickActions = [
     { label: "AI Insights", icon: Sparkles, route: "AiInsights", tone: "#f59e0b" },
     { label: "Charting", icon: LineChart, route: "Charting", tone: "#2563eb" },
+    { label: "Virtual Market", icon: LineChart, route: "VirtualMarket", tone: "#0f766e" },
     { label: "Trends", icon: Brain, route: "MarketTrends", tone: "#16a34a" },
     { label: "Journal", icon: NotebookPen, route: "TradingJournal", tone: "#0ea5e9" },
     { label: "News", icon: Newspaper, route: "News", tone: "#b45309" },

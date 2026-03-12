@@ -14,6 +14,7 @@ import ConsultationBooking from "../screens/ConsultationBooking";
 import Community from "../screens/Community";
 import AlertsSettings from "../screens/AlertsSettings";
 import Portfolio from "../screens/Portfolio";
+import VirtualMarket from "../screens/VirtualMarket_Feature/VirtualMarket";
 import LessonDetail from "../screens/Learn_Feature/LessonDetail";
 import QuizDetail from "../screens/Learn_Feature/QuizDetail";
 import { useAuth } from "../context/AuthContext";
@@ -66,6 +67,7 @@ export default function RootNavigator({
           <Stack.Screen name="Community" component={Community} />
           <Stack.Screen name="AlertsSettings" component={AlertsSettings} />
           <Stack.Screen name="Portfolio" component={Portfolio} />
+          <Stack.Screen name="VirtualMarket" component={VirtualMarket} />
         </>
       ) : (
         <>
