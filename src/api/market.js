@@ -20,3 +20,8 @@ export function fetchMarketQuotes(symbols) {
   const csv = list.map((s) => String(s).trim().toUpperCase()).filter(Boolean).join(",");
   return apiFetch(`/market/quotes?symbols=${encodeURIComponent(csv)}`);
 }
+
+export function fetchMarketNews(limit = 5) {
+  const query = `?limit=${encodeURIComponent(limit)}`;
+  return apiFetch(`/market/news${query}`);
+}

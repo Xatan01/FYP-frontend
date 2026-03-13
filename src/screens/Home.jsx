@@ -7,7 +7,6 @@ import {
   moderateScale,
   useWindowDimensions,
 } from "../styles/responsive";
-import NewsCard from "../components/NewsCard";
 import {
   Shield,
   Star,
@@ -204,7 +203,6 @@ export default function Home({ userData, learningPath, navigation }) {
             <LottieView source={{ uri: LOTTIE_ROBOT }} autoPlay loop style={styles.aiLottie} />
           </TouchableOpacity>
 
-          <NewsCard onPress={() => navigation.navigate("News")} />
         </View>
       </ScrollView>
     </SafeAreaView>
