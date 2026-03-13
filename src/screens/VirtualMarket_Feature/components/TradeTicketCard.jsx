@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-nativ
 import { NotebookPen } from "lucide-react-native";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
 import { formatMoney } from "../virtualMarketUtils";
+import { useAppTheme } from "../../../context/ThemeContext";
 
 export default function TradeTicketCard({
   stocks,
@@ -17,6 +18,8 @@ export default function TradeTicketCard({
   onSell,
   onOpenJournal,
 }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const unlockedStocks = useMemo(
     () => (Array.isArray(stocks) ? stocks.filter((item) => item.is_unlocked) : []),
     [stocks]
@@ -31,7 +34,7 @@ export default function TradeTicketCard({
           <Text style={styles.subtitle}>Unlocked symbols only</Text>
         </View>
         <TouchableOpacity style={styles.journalBtn} onPress={onOpenJournal}>
-          <NotebookPen size={16} color="#bfdbfe" />
+          <NotebookPen size={16} color={palette.accentSoftText} />
         </TouchableOpacity>
       </View>
 
@@ -64,7 +67,7 @@ export default function TradeTicketCard({
           value={quantityInput}
           onChangeText={onQuantityChange}
           placeholder="e.g. 2.5"
-          placeholderTextColor="#64748b"
+          placeholderTextColor={palette.textMuted}
           keyboardType="decimal-pad"
           editable={!submitting}
         />
@@ -98,17 +101,18 @@ export default function TradeTicketCard({
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     marginBottom: verticalScale(12),
   },
   title: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(16),
     fontWeight: "800",
   },
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
     gap: scale(10),
   },
   subtitle: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(11),
     marginTop: verticalScale(2),
   },
@@ -128,9 +132,9 @@ const styles = StyleSheet.create({
     width: scale(30),
     height: scale(30),
     borderRadius: scale(15),
-    backgroundColor: "#1e3a8a",
+    backgroundColor: palette.accentSoft,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -142,26 +146,26 @@ const styles = StyleSheet.create({
   },
   symbolChip: {
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     borderRadius: 999,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(6),
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
   },
   symbolChipSelected: {
-    borderColor: "#2563eb",
-    backgroundColor: "#1e3a8a",
+    borderColor: palette.accent,
+    backgroundColor: palette.accentSoft,
   },
   symbolChipText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(12),
     fontWeight: "700",
   },
   symbolChipTextSelected: {
-    color: "#dbeafe",
+    color: palette.accentSoftText,
   },
   emptyText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     marginBottom: verticalScale(12),
   },
@@ -169,18 +173,18 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(10),
   },
   inputLabel: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(11),
     marginBottom: verticalScale(5),
   },
   input: {
-    backgroundColor: "#111827",
-    borderColor: "#334155",
+    backgroundColor: palette.input,
+    borderColor: palette.inputBorder,
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(9),
-    color: "#f8fafc",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
   },
   priceRow: {
@@ -190,21 +194,21 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(10),
   },
   priceLabel: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
   },
   priceValue: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
   tradeError: {
-    color: "#fca5a5",
+    color: palette.dangerSoftText,
     fontSize: moderateScale(11),
     marginBottom: verticalScale(8),
   },
   tradeMessage: {
-    color: "#86efac",
+    color: palette.successSoftText,
     fontSize: moderateScale(11),
     marginBottom: verticalScale(8),
   },
@@ -220,17 +224,22 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(10),
   },
   buyBtn: {
-    backgroundColor: "#166534",
+    backgroundColor: palette.successSoft,
+    borderWidth: 1,
+    borderColor: palette.success,
   },
   sellBtn: {
-    backgroundColor: "#991b1b",
+    backgroundColor: palette.dangerSoft,
+    borderWidth: 1,
+    borderColor: palette.danger,
   },
   actionBtnText: {
-    color: "#f8fafc",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
   btnDisabled: {
     opacity: 0.55,
   },
-});
+  });
+}

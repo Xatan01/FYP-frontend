@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 import { ChevronLeft } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { scale, verticalScale, moderateScale } from "../../styles/responsive";
+import { useAppTheme } from "../../context/ThemeContext";
 
 function renderJson(value) {
   if (value == null) return "No lesson content found.";
@@ -55,7 +56,7 @@ function normalizeList(items) {
   return normalized.filter((entry) => entry.text);
 }
 
-function renderListSection(title, items) {
+function renderListSection(title, items, styles) {
   const rows = normalizeList(items);
   if (rows.length === 0) return null;
 
@@ -78,6 +79,8 @@ function renderListSection(title, items) {
 }
 
 export default function LessonDetail({ route, navigation }) {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const {
     topicName,
     subtopicName,
@@ -108,12 +111,12 @@ export default function LessonDetail({ route, navigation }) {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ChevronLeft size={16} color="#bfdbfe" />
+          <ChevronLeft size={16} color={palette.accentSoftText} />
           <Text style={styles.backBtnText}>Back to learning path</Text>
         </TouchableOpacity>
 
         <LinearGradient
-          colors={["#1e293b", "#0f172a"]}
+          colors={isLight ? ["#dbeafe", "#eff6ff"] : ["#1e293b", "#0f172a"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -124,11 +127,11 @@ export default function LessonDetail({ route, navigation }) {
           {displaySummary ? <Text style={styles.heroSummary}>{displaySummary}</Text> : null}
         </LinearGradient>
 
-        {renderListSection("Examples", parsedContentJson?.examples)}
-        {renderListSection("Subtopics", parsedContentJson?.subtopics)}
-        {renderListSection("Key Points", parsedContentJson?.key_points)}
-        {renderListSection("Common Mistakes", parsedContentJson?.common_mistakes)}
-        {renderListSection("Questions to Think About", parsedContentJson?.questions_to_think)}
+        {renderListSection("Examples", parsedContentJson?.examples, styles)}
+        {renderListSection("Subtopics", parsedContentJson?.subtopics, styles)}
+        {renderListSection("Key Points", parsedContentJson?.key_points, styles)}
+        {renderListSection("Common Mistakes", parsedContentJson?.common_mistakes, styles)}
+        {renderListSection("Questions to Think About", parsedContentJson?.questions_to_think, styles)}
 
         {!parsedContentJson ? (
           <View style={styles.sectionCard}>
@@ -141,8 +144,9 @@ export default function LessonDetail({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
+function buildStyles(palette) {
+  return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: palette.background },
   container: { padding: scale(18), paddingBottom: verticalScale(48) },
   backBtn: {
     marginBottom: verticalScale(12),
@@ -153,52 +157,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
     borderRadius: 999,
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
   },
-  backBtnText: { color: "#bfdbfe", fontSize: moderateScale(13), fontWeight: "700" },
+  backBtnText: { color: palette.accentSoftText, fontSize: moderateScale(13), fontWeight: "700" },
   hero: {
     borderRadius: 20,
     padding: scale(18),
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     marginBottom: verticalScale(14),
   },
   eyebrow: {
-    color: "#7dd3fc",
+    color: palette.accentSoftText,
     fontSize: moderateScale(11),
     fontWeight: "800",
     letterSpacing: 0.8,
     marginBottom: verticalScale(6),
   },
   title: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(24),
     fontWeight: "800",
     marginBottom: verticalScale(6),
   },
   subtitle: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(13),
     marginBottom: verticalScale(10),
   },
   heroSummary: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(14),
     lineHeight: moderateScale(22),
     marginBottom: verticalScale(10),
   },
   sectionCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     marginBottom: verticalScale(12),
   },
   sectionTitle: {
-    color: "#93c5fd",
+    color: palette.accentSoftText,
     fontSize: moderateScale(14),
     fontWeight: "800",
     marginBottom: verticalScale(10),
@@ -212,41 +216,44 @@ const styles = StyleSheet.create({
     width: scale(24),
     height: scale(24),
     borderRadius: 999,
-    backgroundColor: "#1e40af",
+    backgroundColor: palette.accentSoft,
+    borderWidth: 1,
+    borderColor: palette.accent,
     alignItems: "center",
     justifyContent: "center",
     marginRight: scale(10),
     marginTop: verticalScale(1),
   },
   listIndexText: {
-    color: "#dbeafe",
+    color: palette.accentSoftText,
     fontSize: moderateScale(11),
     fontWeight: "800",
   },
   listContent: {
     flex: 1,
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
   },
   listLabel: {
-    color: "#fde68a",
+    color: palette.warningSoftText,
     fontSize: moderateScale(12),
     fontWeight: "700",
     marginBottom: verticalScale(4),
   },
   listText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(13),
     lineHeight: moderateScale(20),
   },
   code: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontFamily: "Courier New",
     fontSize: moderateScale(12),
     lineHeight: moderateScale(18),
   },
-});
+  });
+}

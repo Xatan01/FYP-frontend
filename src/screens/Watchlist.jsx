@@ -15,6 +15,7 @@ import { Heart } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { addWatchlistItem, fetchWatchlist, removeWatchlistItem } from "../api/watchlist";
 import { fetchMarketQuotes, fetchPopularMarketQuotes, searchMarketSymbols } from "../api/market";
+import { useAppTheme } from "../context/ThemeContext";
 
 function getLogoUrl(symbol) {
   return `https://financialmodelingprep.com/image-stock/${encodeURIComponent(symbol)}.png`;
@@ -30,6 +31,8 @@ function SymbolRow({
   onPressChart,
   onToggleHeart,
   tone = "default",
+  styles,
+  palette,
 }) {
   const heartScale = useRef(new Animated.Value(1)).current;
 
@@ -79,7 +82,7 @@ function SymbolRow({
           <Animated.View style={{ transform: [{ scale: heartScale }] }}>
             <Heart
               size={18}
-              color={liked ? "#fb7185" : "#94a3b8"}
+              color={liked ? "#fb7185" : palette.textMuted}
               fill={liked ? "#fb7185" : "none"}
             />
           </Animated.View>
@@ -90,6 +93,8 @@ function SymbolRow({
 }
 
 export default function Watchlist({ navigation }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const [watchlist, setWatchlist] = useState([]);
   const [popular, setPopular] = useState([]);
   const [quotesBySymbol, setQuotesBySymbol] = useState({});
@@ -314,7 +319,7 @@ export default function Watchlist({ navigation }) {
             <TextInput
               style={styles.searchInput}
               placeholder="Search symbol (e.g. AAPL)"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={palette.textMuted}
               value={symbolQuery}
               onChangeText={setSymbolQuery}
               autoCapitalize="characters"
@@ -336,6 +341,8 @@ export default function Watchlist({ navigation }) {
                   pending={Boolean(pendingSymbols[symbolKey])}
                   onPressChart={() => navigation.navigate("Charting", { symbol: symbolKey })}
                   onToggleHeart={() => handleSearchHeartToggle(symbolKey, item.name || symbolKey)}
+                  styles={styles}
+                  palette={palette}
                 />
               );
             })}
@@ -355,6 +362,8 @@ export default function Watchlist({ navigation }) {
                 pending={Boolean(pendingSymbols[symbolKey])}
                 onPressChart={() => navigation.navigate("Charting", { symbol: symbolKey })}
                 onToggleHeart={() => toggleWatchlist(symbolKey, item.name || symbolKey)}
+                styles={styles}
+                palette={palette}
               />
             );
           })}
@@ -384,6 +393,8 @@ export default function Watchlist({ navigation }) {
               onPressChart={() => navigation.navigate("Charting", { symbol: item.symbol })}
               onToggleHeart={() => toggleWatchlist(item.symbol, item.name || item.symbol)}
               tone="saved"
+              styles={styles}
+              palette={palette}
             />
           ))}
 
@@ -396,145 +407,149 @@ export default function Watchlist({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
-  container: { flex: 1 },
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: scale(8),
-  },
-  loadingText: { color: "#94a3b8", fontSize: moderateScale(12) },
-  header: {
-    fontSize: moderateScale(22),
-    fontWeight: "bold",
-    color: "#f8fafc",
-    marginBottom: verticalScale(12),
-  },
-  error: {
-    color: "#fca5a5",
-    fontSize: moderateScale(12),
-    marginBottom: verticalScale(8),
-  },
-  searchCard: {
-    backgroundColor: "#0f172a",
-    borderRadius: scale(16),
-    padding: scale(12),
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    marginBottom: verticalScale(12),
-  },
-  searchTitle: {
-    color: "#e2e8f0",
-    fontSize: moderateScale(13),
-    fontWeight: "700",
-    marginBottom: verticalScale(8),
-  },
-  searchInput: {
-    backgroundColor: "#111827",
-    borderRadius: scale(12),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(10),
-    borderWidth: 1,
-    borderColor: "#334155",
-    marginBottom: verticalScale(8),
-    fontSize: moderateScale(12),
-    color: "#f8fafc",
-  },
-  searchHint: {
-    color: "#94a3b8",
-    fontSize: moderateScale(11),
-    marginBottom: verticalScale(8),
-  },
-  sectionHeader: {
-    fontSize: moderateScale(14),
-    color: "#e2e8f0",
-    fontWeight: "700",
-    marginBottom: verticalScale(8),
-    marginTop: verticalScale(4),
-  },
-  savedHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  refreshQuotesBtn: {
-    backgroundColor: "#1e293b",
-    borderRadius: 8,
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-  },
-  refreshQuotesText: {
-    color: "#93c5fd",
-    fontSize: moderateScale(11),
-    fontWeight: "700",
-  },
-  rowCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderRadius: scale(14),
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    padding: scale(12),
-    marginBottom: verticalScale(8),
-  },
-  rowCardPopular: {
-    backgroundColor: "#0f172a",
-  },
-  rowCardSaved: {
-    backgroundColor: "#111827",
-  },
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(10),
-    flex: 1,
-    marginRight: scale(10),
-  },
-  logo: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: scale(14),
-    backgroundColor: "#334155",
-  },
-  logoFallback: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: scale(14),
-    backgroundColor: "#1e3a8a",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoFallbackText: {
-    color: "#bfdbfe",
-    fontSize: moderateScale(10),
-    fontWeight: "700",
-  },
-  symbol: { fontSize: moderateScale(15), fontWeight: "600", color: "#f8fafc" },
-  name: { fontSize: moderateScale(12), color: "#94a3b8", marginTop: 2 },
-  right: { alignItems: "flex-end" },
-  price: { fontSize: moderateScale(14), fontWeight: "600", color: "#f8fafc" },
-  change: { fontSize: moderateScale(12), fontWeight: "500", marginTop: verticalScale(1) },
-  heartBtn: {
-    marginTop: verticalScale(6),
-    width: scale(30),
-    height: scale(30),
-    borderRadius: scale(15),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1f2937",
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  heartBtnDisabled: {
-    opacity: 0.5,
-  },
-  emptyState: {
-    textAlign: "center",
-    color: "#64748b",
-    fontSize: moderateScale(12),
-    marginTop: verticalScale(12),
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    loading: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: scale(8),
+    },
+    loadingText: { color: palette.textMuted, fontSize: moderateScale(12) },
+    header: {
+      fontSize: moderateScale(22),
+      fontWeight: "bold",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(12),
+    },
+    error: {
+      color: palette.danger,
+      fontSize: moderateScale(12),
+      marginBottom: verticalScale(8),
+    },
+    searchCard: {
+      backgroundColor: palette.card,
+      borderRadius: scale(16),
+      padding: scale(12),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      marginBottom: verticalScale(12),
+    },
+    searchTitle: {
+      color: palette.textPrimary,
+      fontSize: moderateScale(13),
+      fontWeight: "700",
+      marginBottom: verticalScale(8),
+    },
+    searchInput: {
+      backgroundColor: palette.input,
+      borderRadius: scale(12),
+      paddingVertical: verticalScale(8),
+      paddingHorizontal: scale(10),
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      marginBottom: verticalScale(8),
+      fontSize: moderateScale(12),
+      color: palette.textPrimary,
+    },
+    searchHint: {
+      color: palette.textMuted,
+      fontSize: moderateScale(11),
+      marginBottom: verticalScale(8),
+    },
+    sectionHeader: {
+      fontSize: moderateScale(14),
+      color: palette.textPrimary,
+      fontWeight: "700",
+      marginBottom: verticalScale(8),
+      marginTop: verticalScale(4),
+    },
+    savedHeaderRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    refreshQuotesBtn: {
+      backgroundColor: palette.cardMuted,
+      borderRadius: 8,
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    refreshQuotesText: {
+      color: palette.tabActive,
+      fontSize: moderateScale(11),
+      fontWeight: "700",
+    },
+    rowCard: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderRadius: scale(14),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      padding: scale(12),
+      marginBottom: verticalScale(8),
+    },
+    rowCardPopular: {
+      backgroundColor: palette.card,
+    },
+    rowCardSaved: {
+      backgroundColor: palette.cardSoft,
+    },
+    rowLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(10),
+      flex: 1,
+      marginRight: scale(10),
+    },
+    logo: {
+      width: scale(28),
+      height: scale(28),
+      borderRadius: scale(14),
+      backgroundColor: palette.inputBorder,
+    },
+    logoFallback: {
+      width: scale(28),
+      height: scale(28),
+      borderRadius: scale(14),
+      backgroundColor: palette.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logoFallbackText: {
+      color: palette.accentText,
+      fontSize: moderateScale(10),
+      fontWeight: "700",
+    },
+    symbol: { fontSize: moderateScale(15), fontWeight: "600", color: palette.textPrimary },
+    name: { fontSize: moderateScale(12), color: palette.textMuted, marginTop: 2 },
+    right: { alignItems: "flex-end" },
+    price: { fontSize: moderateScale(14), fontWeight: "600", color: palette.textPrimary },
+    change: { fontSize: moderateScale(12), fontWeight: "500", marginTop: verticalScale(1) },
+    heartBtn: {
+      marginTop: verticalScale(6),
+      width: scale(30),
+      height: scale(30),
+      borderRadius: scale(15),
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: palette.cardMuted,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+    },
+    heartBtnDisabled: {
+      opacity: 0.5,
+    },
+    emptyState: {
+      textAlign: "center",
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+      marginTop: verticalScale(12),
+    },
+  });
+}

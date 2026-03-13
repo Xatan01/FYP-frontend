@@ -13,6 +13,7 @@ import { Crown, DollarSign, Percent, Trophy, Users, Zap } from "lucide-react-nat
 import { moderateScale, scale, verticalScale } from "../styles/responsive";
 import { fetchLeaderboards } from "../api/leaderboard";
 import { useAuth } from "../context/AuthContext";
+import { useAppTheme } from "../context/ThemeContext";
 
 const METRIC_TABS = [
   { key: "xp", label: "Learning XP", icon: Zap },
@@ -31,14 +32,14 @@ function formatMetricValue(metric, raw) {
   return `${sign}${value.toFixed(2)}%`;
 }
 
-function rankBadgeStyle(rank) {
+function rankBadgeStyle(styles, rank) {
   if (rank === 1) return styles.rankGold;
   if (rank === 2) return styles.rankSilver;
   if (rank === 3) return styles.rankBronze;
   return styles.rankDefault;
 }
 
-function valueStyle(metric, value) {
+function valueStyle(styles, metric, value) {
   if (metric !== "equity_return_pct") return styles.valueDefault;
   const num = Number(value);
   if (num > 0) return styles.valuePositive;
@@ -46,13 +47,13 @@ function valueStyle(metric, value) {
   return styles.valueNeutral;
 }
 
-function LeaderboardCard({ title, icon: Icon, metric, rows, meUserId }) {
+function LeaderboardCard({ title, icon: Icon, metric, rows, meUserId, styles, palette }) {
   const items = Array.isArray(rows) ? rows : [];
 
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Icon size={16} color="#93c5fd" />
+        <Icon size={16} color={palette.accentSoftText} />
         <Text style={styles.cardTitle}>{title}</Text>
       </View>
 
@@ -67,12 +68,12 @@ function LeaderboardCard({ title, icon: Icon, metric, rows, meUserId }) {
                 : styles.rowDivider,
             ]}
           >
-            <View style={[styles.rankBadge, rankBadgeStyle(row.rank)]}>
+            <View style={[styles.rankBadge, rankBadgeStyle(styles, row.rank)]}>
               {row.rank <= 3 ? <Crown size={12} color="#0f172a" /> : null}
               <Text style={styles.rankText}>#{row.rank}</Text>
             </View>
             <Text style={styles.username}>@{row.username}</Text>
-            <Text style={[styles.value, valueStyle(metric, row.value)]}>
+            <Text style={[styles.value, valueStyle(styles, metric, row.value)]}>
               {formatMetricValue(metric, row.value)}
             </Text>
           </View>
@@ -85,6 +86,8 @@ function LeaderboardCard({ title, icon: Icon, metric, rows, meUserId }) {
 }
 
 export default function Community() {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -123,7 +126,7 @@ export default function Community() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={["#1e293b", "#0f172a"]}
+          colors={isLight ? ["#dbeafe", "#eff6ff"] : ["#1e293b", "#0f172a"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -155,7 +158,7 @@ export default function Community() {
                   style={[styles.tabBtn, selected ? styles.tabBtnActive : null]}
                   onPress={() => setActiveMetric(tab.key)}
                 >
-                  <Icon size={14} color={selected ? "#0f172a" : "#cbd5e1"} />
+                  <Icon size={14} color={selected ? "#0f172a" : palette.textSecondary} />
                   <Text style={[styles.tabText, selected ? styles.tabTextActive : null]}>
                     {tab.label}
                   </Text>
@@ -167,7 +170,7 @@ export default function Community() {
 
         {loading ? (
           <View style={styles.centerCard}>
-            <ActivityIndicator color="#7dd3fc" />
+            <ActivityIndicator color={palette.accent} />
             <Text style={styles.centerText}>Loading leaderboards...</Text>
           </View>
         ) : null}
@@ -192,6 +195,8 @@ export default function Community() {
               metric={activeMetric}
               rows={globalRows}
               meUserId={user?.id}
+              styles={styles}
+              palette={palette}
             />
             <LeaderboardCard
               title={`Friends ${activeTab.label}`}
@@ -199,6 +204,8 @@ export default function Community() {
               metric={activeMetric}
               rows={friendRows}
               meUserId={user?.id}
+              styles={styles}
+              palette={palette}
             />
           </>
         ) : null}
@@ -207,8 +214,9 @@ export default function Community() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
+function buildStyles(palette) {
+  return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: palette.background },
   container: {
     padding: scale(18),
     paddingBottom: verticalScale(48),
@@ -217,7 +225,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: scale(16),
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     marginBottom: verticalScale(14),
   },
   heroHeader: {
@@ -233,26 +241,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroTitle: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(22),
     fontWeight: "800",
     flexShrink: 1,
   },
   heroSubtitle: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(13),
     marginTop: verticalScale(8),
     marginBottom: verticalScale(12),
   },
   refreshBtn: {
     alignSelf: "flex-start",
-    backgroundColor: "#1e3a8a",
+    backgroundColor: palette.accentSoft,
     borderRadius: 10,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(6),
   },
   refreshText: {
-    color: "#dbeafe",
+    color: palette.accentSoftText,
     fontSize: moderateScale(11),
     fontWeight: "700",
   },
@@ -267,8 +275,8 @@ const styles = StyleSheet.create({
     gap: scale(4),
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.input,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(6),
   },
@@ -277,7 +285,7 @@ const styles = StyleSheet.create({
     borderColor: "#eab308",
   },
   tabText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(11),
     fontWeight: "700",
   },
@@ -285,10 +293,10 @@ const styles = StyleSheet.create({
     color: "#0f172a",
   },
   card: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     marginBottom: verticalScale(12),
   },
@@ -299,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(8),
   },
   cardTitle: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(15),
     fontWeight: "800",
   },
@@ -311,13 +319,13 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: "#1f2937",
+    borderBottomColor: palette.cardBorder,
   },
   myRow: {
     borderWidth: 1,
     borderColor: "#22d3ee",
     borderRadius: 10,
-    backgroundColor: "#082f49",
+    backgroundColor: palette.accentSoft,
     paddingHorizontal: scale(6),
     marginVertical: verticalScale(2),
   },
@@ -341,7 +349,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fdba74",
   },
   rankDefault: {
-    backgroundColor: "#334155",
+    backgroundColor: palette.inputBorder,
   },
   rankText: {
     color: "#0f172a",
@@ -349,7 +357,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   username: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(12),
     fontWeight: "700",
     flex: 1,
@@ -359,54 +367,55 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   valueDefault: {
-    color: "#f8fafc",
+    color: palette.textPrimary,
   },
   valuePositive: {
-    color: "#86efac",
+    color: palette.successSoftText,
   },
   valueNegative: {
-    color: "#fca5a5",
+    color: palette.dangerSoftText,
   },
   valueNeutral: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
   },
   emptyText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     textAlign: "center",
     paddingVertical: verticalScale(8),
   },
   centerCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(12),
   },
   centerText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(13),
     marginTop: verticalScale(8),
     textAlign: "center",
   },
   errorText: {
-    color: "#fca5a5",
+    color: palette.dangerSoftText,
     fontSize: moderateScale(13),
     textAlign: "center",
   },
   retryBtn: {
     marginTop: verticalScale(10),
-    backgroundColor: "#1e40af",
+    backgroundColor: palette.accent,
     borderRadius: 10,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(8),
   },
   retryText: {
-    color: "#dbeafe",
+    color: palette.white,
     fontSize: moderateScale(12),
     fontWeight: "700",
   },
-});
+  });
+}

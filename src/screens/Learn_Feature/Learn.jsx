@@ -28,6 +28,7 @@ import * as Haptics from "expo-haptics";
 import { fetchLessonByTopicId } from "../../api/learning";
 import usePersistedState from "../../hooks/usePersistedState";
 import usePulseAnimation from "../../hooks/usePulseAnimation";
+import { useAppTheme } from "../../context/ThemeContext";
 
 const TOPIC_NAME_MAP = {
   1: "Introduction to Stocks",
@@ -117,6 +118,7 @@ function isSubtopicCompleted(unit, progressState) {
 }
 
 export default function Learn({ learningPath = [], userData = {}, navigation, route }) {
+  const { palette, isLight } = useAppTheme();
   const [backendPath, setBackendPath] = useState([]);
   const [topicPanels, setTopicPanels] = useState(() =>
     Object.fromEntries(
@@ -127,6 +129,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
     )
   );
   const pulseStyle = usePulseAnimation();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
 
   const {
     value: progressState,
@@ -591,7 +594,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
                       return (
                         <View key={unit.unit} style={styles.unitContainer}>
                           <LinearGradient
-                            colors={["#0f172a", "#1e293b"]}
+                            colors={isLight ? ["#eff6ff", "#dbeafe"] : ["#0f172a", "#1e293b"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.unitCard}
@@ -637,7 +640,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
                                   {index !== 0 && (
                                     <View style={styles.roadConnector}>
                                       <LinearGradient
-                                        colors={["#64748b", "#1e293b"]}
+                                        colors={isLight ? ["#cbd5e1", "#94a3b8"] : ["#64748b", "#1e293b"]}
                                         style={styles.roadLine}
                                       />
                                     </View>
@@ -664,7 +667,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
                                     {lesson.type !== "summary" && (
                                       <View style={styles.quizBranch}>
                                         <LinearGradient
-                                          colors={["#64748b", "#1e293b"]}
+                                          colors={isLight ? ["#cbd5e1", "#94a3b8"] : ["#64748b", "#1e293b"]}
                                           start={{ x: 0, y: 0 }}
                                           end={{ x: 1, y: 0 }}
                                           style={styles.quizBranchLine}
@@ -681,14 +684,14 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
                                           onPress={() => handleQuizPress(unit, lesson, index)}
                                         >
                                           {lesson.status === "locked" ? (
-                                            <Lock size={22} color="#94a3b8" />
+                                            <Lock size={22} color={palette.textMuted} />
                                           ) : (
-                                            <NotebookPen size={22} color="#f8fafc" />
+                                            <NotebookPen size={22} color={palette.textPrimary} />
                                           )}
                                         </TouchableOpacity>
 
                                         <LinearGradient
-                                          colors={["#64748b", "#1e293b"]}
+                                          colors={isLight ? ["#cbd5e1", "#94a3b8"] : ["#64748b", "#1e293b"]}
                                           start={{ x: 0, y: 0 }}
                                           end={{ x: 1, y: 0 }}
                                           style={styles.explanationBranchLine}
@@ -706,9 +709,9 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
                                           onPress={() => handleAnswerExplanationPress(unit, lesson)}
                                         >
                                           {lesson.status === "locked" ? (
-                                            <Lock size={22} color="#94a3b8" />
+                                            <Lock size={22} color={palette.textMuted} />
                                           ) : (
-                                            <Check size={22} color="#f8fafc" />
+                                            <Check size={22} color={palette.textPrimary} />
                                           )}
                                         </TouchableOpacity>
                                       </View>
@@ -741,8 +744,9 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
+function buildStyles(palette) {
+  return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: palette.background },
   scroll: { padding: scale(18), paddingBottom: verticalScale(60) },
   loadingWrap: {
     flex: 1,
@@ -751,18 +755,18 @@ const styles = StyleSheet.create({
     gap: verticalScale(8),
   },
   loadingText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(13),
     fontWeight: "600",
   },
   warningText: {
-    color: "#fca5a5",
+    color: palette.danger,
     fontSize: moderateScale(12),
     marginTop: verticalScale(6),
   },
   headerWrap: { marginBottom: verticalScale(28) },
-  header: { fontSize: moderateScale(28), fontWeight: "900", color: "#f8fafc" },
-  headerSub: { fontSize: moderateScale(14), color: "#94a3b8", marginTop: 4 },
+  header: { fontSize: moderateScale(28), fontWeight: "900", color: palette.textPrimary },
+  headerSub: { fontSize: moderateScale(14), color: palette.textMuted, marginTop: 4 },
   headerContainer: {
     width: "100%",
     paddingHorizontal: scale(20),
@@ -793,25 +797,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     borderRadius: 14,
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
     marginBottom: verticalScale(10),
   },
   topicStatusCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     borderRadius: 12,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
     marginBottom: verticalScale(12),
   },
   topicStatusText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     marginTop: verticalScale(6),
   },
@@ -822,7 +826,7 @@ const styles = StyleSheet.create({
   },
   retryTopicBtn: {
     alignSelf: "flex-start",
-    backgroundColor: "#1e40af",
+    backgroundColor: palette.accent,
     borderRadius: 10,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(7),
@@ -835,7 +839,7 @@ const styles = StyleSheet.create({
   topicGroupTitle: {
     fontSize: moderateScale(18),
     fontWeight: "800",
-    color: "#f8fafc",
+    color: palette.textPrimary,
   },
   unitContainer: { marginBottom: verticalScale(36) },
   unitCard: {
@@ -854,14 +858,14 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(11),
     fontWeight: "700",
     letterSpacing: 1.2,
-    color: "#94a3b8",
+    color: palette.textMuted,
     marginBottom: 2,
   },
   unitTitle: { fontSize: moderateScale(16), color: "#f8fafc" },
 
   progressBarBackground: {
     height: 6,
-    backgroundColor: "#334155",
+    backgroundColor: palette.inputBorder,
     borderRadius: 3,
     marginTop: verticalScale(8),
     overflow: "hidden",
@@ -871,15 +875,15 @@ const styles = StyleSheet.create({
   lockedPanel: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#1e293b",
-    backgroundColor: "#0f172a",
+    borderColor: palette.cardBorder,
+    backgroundColor: palette.card,
     paddingVertical: verticalScale(14),
     paddingHorizontal: scale(14),
     alignItems: "center",
     marginTop: -verticalScale(6),
   },
   lockedTitle: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(14),
     fontWeight: "800",
     marginTop: verticalScale(6),
@@ -951,7 +955,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
-  nodeLocked: { backgroundColor: "#1e293b", borderWidth: 1, borderColor: "#334155" },
+  nodeLocked: { backgroundColor: palette.cardMuted, borderWidth: 1, borderColor: palette.inputBorder },
   nodeSummary: {
     backgroundColor: "#fde047",
     borderWidth: 1,
@@ -986,8 +990,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  quizNodeReady: { backgroundColor: "#0f172a", borderColor: "#334155" },
-  quizNodeLocked: { backgroundColor: "#0b1220", borderColor: "#334155" },
+  quizNodeReady: { backgroundColor: palette.card, borderColor: palette.inputBorder },
+  quizNodeLocked: { backgroundColor: palette.backgroundAlt, borderColor: palette.inputBorder },
   nodeLabel: {
     marginTop: verticalScale(8),
     width: scale(188),
@@ -995,8 +999,9 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     lineHeight: moderateScale(18),
     fontWeight: "600",
-    color: "#e5e7eb",
+    color: palette.textPrimary,
     alignSelf: "center",
   },
-  nodeLabelLocked: { color: "#64748b" },
-});
+  nodeLabelLocked: { color: palette.textMuted },
+  });
+}

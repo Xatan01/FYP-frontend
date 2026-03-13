@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -24,6 +24,7 @@ import {
   sendFriendRequest,
   updateMyFriendProfile,
 } from "../api/friends";
+import { useAppTheme } from "../context/ThemeContext";
 
 function getInitials(username) {
   const raw = String(username || "").trim().replace(/^@/, "");
@@ -49,6 +50,7 @@ function UserRow({
   subtitle,
   rightNode,
   rowStyle,
+  styles,
 }) {
   return (
     <View style={[styles.row, rowStyle]}>
@@ -66,7 +68,7 @@ function UserRow({
   );
 }
 
-function SectionCard({ title, subtitle, children }) {
+function SectionCard({ title, subtitle, children, styles }) {
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{title}</Text>
@@ -77,6 +79,8 @@ function SectionCard({ title, subtitle, children }) {
 }
 
 export default function Friends({ navigation }) {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -213,7 +217,7 @@ export default function Friends({ navigation }) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={palette.accent} />
           <Text style={styles.loadingText}>Loading friends...</Text>
         </View>
       </SafeAreaView>
@@ -228,19 +232,19 @@ export default function Friends({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ChevronLeft size={16} color="#bfdbfe" />
+          <ChevronLeft size={16} color={palette.accentSoftText} />
           <Text style={styles.backBtnText}>Back</Text>
         </TouchableOpacity>
 
         <LinearGradient
-          colors={["#1e3a8a", "#0f172a"]}
+          colors={isLight ? ["#dbeafe", "#eff6ff"] : ["#1e3a8a", "#0f172a"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
           <View style={styles.heroTopRow}>
             <View style={styles.heroTitleRow}>
-              <Users size={18} color="#7dd3fc" />
+              <Users size={18} color={palette.accentSoftText} />
               <Text style={styles.eyebrow}>Friends</Text>
             </View>
             <View style={styles.countPill}>
@@ -272,12 +276,13 @@ export default function Friends({ navigation }) {
         <SectionCard
           title="Your Handle"
           subtitle="Pick a username friends can find."
+          styles={styles}
         >
           <View style={styles.inlineRow}>
             <TextInput
               style={styles.input}
               placeholder="username"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={palette.textMuted}
               autoCapitalize="none"
               value={usernameInput}
               onChangeText={setUsernameInput}
@@ -298,12 +303,13 @@ export default function Friends({ navigation }) {
         <SectionCard
           title="Find People"
           subtitle="Search usernames and send a quick invite."
+          styles={styles}
         >
           <View style={styles.inlineRow}>
             <TextInput
               style={styles.input}
               placeholder="Search username"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={palette.textMuted}
               autoCapitalize="none"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -313,7 +319,7 @@ export default function Friends({ navigation }) {
               onPress={runSearch}
               disabled={busy}
             >
-              <Search size={14} color="#dbeafe" />
+              <Search size={14} color={palette.white} />
               <Text style={styles.primaryText}>Search</Text>
             </TouchableOpacity>
           </View>
@@ -324,6 +330,7 @@ export default function Friends({ navigation }) {
               username={item.username}
               subtitle={relationLabel(item.relation)}
               rowStyle={index === searchResults.length - 1 ? styles.lastRow : null}
+              styles={styles}
               rightNode={
                 item.relation === "none" ? (
                   <TouchableOpacity
@@ -357,13 +364,14 @@ export default function Friends({ navigation }) {
           ) : null}
         </SectionCard>
 
-        <SectionCard title="Incoming Requests">
+        <SectionCard title="Incoming Requests" styles={styles}>
           {incoming.map((item, index) => (
             <UserRow
               key={item.friendship_id}
               username={item.username}
               subtitle="Wants to be friends"
               rowStyle={index === incoming.length - 1 ? styles.lastRow : null}
+              styles={styles}
               rightNode={
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
@@ -387,13 +395,14 @@ export default function Friends({ navigation }) {
           {!incoming.length ? <Text style={styles.emptyText}>No incoming requests.</Text> : null}
         </SectionCard>
 
-        <SectionCard title="Outgoing Requests">
+        <SectionCard title="Outgoing Requests" styles={styles}>
           {outgoing.map((item, index) => (
             <UserRow
               key={item.friendship_id}
               username={item.username}
               subtitle="Waiting for reply"
               rowStyle={index === outgoing.length - 1 ? styles.lastRow : null}
+              styles={styles}
               rightNode={
                 <View style={styles.pill}>
                   <Text style={styles.pillText}>Pending</Text>
@@ -404,13 +413,14 @@ export default function Friends({ navigation }) {
           {!outgoing.length ? <Text style={styles.emptyText}>No outgoing requests.</Text> : null}
         </SectionCard>
 
-        <SectionCard title="Your Circle">
+        <SectionCard title="Your Circle" styles={styles}>
           {friends.map((item, index) => (
             <UserRow
               key={item.friendship_id}
               username={item.username}
               subtitle="In your circle"
               rowStyle={index === friends.length - 1 ? styles.lastRow : null}
+              styles={styles}
               rightNode={
                 <TouchableOpacity
                   style={[styles.secondaryButton, busy ? styles.disabled : null]}
@@ -429,8 +439,9 @@ export default function Friends({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
+function buildStyles(palette) {
+  return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: palette.background },
   container: { flex: 1 },
   content: { padding: scale(18), paddingBottom: verticalScale(48) },
   loading: {
@@ -438,9 +449,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: scale(8),
-    backgroundColor: "#020617",
+    backgroundColor: palette.background,
   },
-  loadingText: { color: "#94a3b8", fontSize: moderateScale(12) },
+  loadingText: { color: palette.textMuted, fontSize: moderateScale(12) },
   backBtn: {
     marginBottom: verticalScale(12),
     alignSelf: "flex-start",
@@ -450,16 +461,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
     borderRadius: 999,
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
   },
-  backBtnText: { color: "#bfdbfe", fontSize: moderateScale(13), fontWeight: "700" },
+  backBtnText: { color: palette.accentSoftText, fontSize: moderateScale(13), fontWeight: "700" },
   hero: {
     borderRadius: 20,
     padding: scale(18),
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     marginBottom: verticalScale(14),
   },
   heroTopRow: {
@@ -474,7 +485,7 @@ const styles = StyleSheet.create({
     gap: scale(6),
   },
   eyebrow: {
-    color: "#7dd3fc",
+    color: palette.accentSoftText,
     fontSize: moderateScale(11),
     fontWeight: "800",
     letterSpacing: 0.8,
@@ -482,24 +493,24 @@ const styles = StyleSheet.create({
   countPill: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.input,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(4),
   },
   countPillText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(11),
     fontWeight: "700",
   },
   header: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(24),
     fontWeight: "800",
     marginBottom: verticalScale(6),
   },
   subtitle: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(13),
     marginBottom: verticalScale(10),
   },
@@ -510,50 +521,50 @@ const styles = StyleSheet.create({
   metricPill: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.input,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(6),
   },
   metricLabel: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(10),
   },
   metricValue: {
-    color: "#dbeafe",
+    color: palette.accentSoftText,
     fontSize: moderateScale(13),
     fontWeight: "700",
     marginTop: verticalScale(1),
   },
   errorCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#7f1d1d",
+    borderColor: palette.danger,
     padding: scale(10),
     marginBottom: verticalScale(10),
   },
   error: {
-    color: "#fca5a5",
+    color: palette.dangerSoftText,
     fontSize: moderateScale(12),
   },
   card: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     marginBottom: verticalScale(12),
   },
   cardTitle: {
     fontSize: moderateScale(15),
     fontWeight: "800",
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     marginBottom: verticalScale(4),
   },
   cardHint: {
     fontSize: moderateScale(11),
-    color: "#94a3b8",
+    color: palette.textMuted,
     marginBottom: verticalScale(8),
   },
   inlineRow: {
@@ -563,26 +574,26 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     borderRadius: 10,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(9),
     fontSize: moderateScale(12),
-    color: "#f8fafc",
+    color: palette.textPrimary,
   },
   smallText: {
     marginTop: verticalScale(8),
     fontSize: moderateScale(11),
-    color: "#94a3b8",
+    color: palette.textMuted,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#1f2937",
+    borderBottomColor: palette.cardBorder,
     paddingVertical: verticalScale(9),
     gap: scale(8),
   },
@@ -606,25 +617,25 @@ const styles = StyleSheet.create({
     width: scale(28),
     height: scale(28),
     borderRadius: scale(14),
-    backgroundColor: "#2563eb",
+    backgroundColor: palette.accent,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: "#bfdbfe",
+    color: palette.white,
     fontSize: moderateScale(10),
     fontWeight: "700",
   },
   rowTitle: {
     fontSize: moderateScale(13),
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: palette.textPrimary,
   },
   rowSub: {
     fontSize: moderateScale(11),
-    color: "#94a3b8",
+    color: palette.textMuted,
     marginTop: verticalScale(2),
   },
   actionsRow: {
@@ -638,13 +649,13 @@ const styles = StyleSheet.create({
     gap: scale(4),
     backgroundColor: "#2563eb",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     borderRadius: 10,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
   },
   primaryText: {
-    color: "#dbeafe",
+    color: palette.white,
     fontSize: moderateScale(11),
     fontWeight: "700",
   },
@@ -665,38 +676,39 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   secondaryButton: {
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     borderRadius: 10,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(6),
   },
   secondaryText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(11),
     fontWeight: "700",
   },
   pill: {
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(4),
   },
   pillText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(10),
     fontWeight: "700",
   },
   emptyText: {
     textAlign: "center",
-    color: "#64748b",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     marginTop: verticalScale(8),
   },
   disabled: {
     opacity: 0.55,
   },
-});
+  });
+}

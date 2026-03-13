@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
 import QuestionInteraction from "./QuestionInteraction";
 import { formatDifficulty } from "./quizUtils";
+import { useAppTheme } from "../../../context/ThemeContext";
 
 export default function QuizContent({
   navigation,
@@ -41,6 +42,8 @@ export default function QuizContent({
   isProfilingQuiz = false,
   onFinishAndContinue,
 }) {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -54,7 +57,7 @@ export default function QuizContent({
         </TouchableOpacity>
 
         <LinearGradient
-          colors={["#1e293b", "#0f172a"]}
+          colors={isLight ? ["#dbeafe", "#eff6ff"] : ["#1e293b", "#0f172a"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -180,8 +183,9 @@ export default function QuizContent({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
+function buildStyles(palette) {
+  return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: palette.background },
   container: { padding: scale(18), paddingBottom: verticalScale(48) },
   backBtn: {
     marginBottom: verticalScale(12),
@@ -192,16 +196,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
     borderRadius: 999,
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
   },
-  backBtnText: { color: "#bfdbfe", fontSize: moderateScale(13), fontWeight: "700" },
+  backBtnText: { color: palette.accentText, fontSize: moderateScale(13), fontWeight: "700" },
   hero: {
     borderRadius: 20,
     padding: scale(18),
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     marginBottom: verticalScale(14),
   },
   eyebrow: {
@@ -212,27 +216,27 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(6),
   },
   title: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(24),
     fontWeight: "800",
     marginBottom: verticalScale(6),
   },
   subtitle: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(13),
   },
   centerCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(12),
   },
   centerText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(13),
     marginTop: verticalScale(8),
     textAlign: "center",
@@ -244,21 +248,21 @@ const styles = StyleSheet.create({
   },
   retryBtn: {
     marginTop: verticalScale(10),
-    backgroundColor: "#1e40af",
+    backgroundColor: palette.accent,
     borderRadius: 10,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(8),
   },
   retryText: {
-    color: "#dbeafe",
+    color: palette.accentText,
     fontSize: moderateScale(12),
     fontWeight: "700",
   },
   questionCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     marginBottom: verticalScale(12),
   },
@@ -269,7 +273,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(6),
   },
   questionType: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(11),
     textTransform: "capitalize",
   },
@@ -281,7 +285,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 6,
-    backgroundColor: "#1f2937",
+    backgroundColor: palette.cardBorder,
     borderRadius: 999,
     overflow: "hidden",
     marginBottom: verticalScale(12),
@@ -292,28 +296,28 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   questionTitle: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(16),
     fontWeight: "800",
     marginBottom: verticalScale(6),
   },
   questionSummary: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(13),
     lineHeight: moderateScale(19),
     marginBottom: verticalScale(8),
   },
   questionBody: {
-    color: "#e5e7eb",
+    color: palette.textPrimary,
     fontSize: moderateScale(16),
     lineHeight: moderateScale(23),
     fontWeight: "600",
     marginBottom: verticalScale(10),
   },
   scenarioCard: {
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     borderRadius: 12,
     padding: scale(10),
     marginBottom: verticalScale(10),
@@ -325,7 +329,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(4),
   },
   scenarioText: {
-    color: "#e5e7eb",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
     lineHeight: moderateScale(19),
   },
@@ -351,16 +355,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   secondaryBtn: {
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
   },
   secondaryBtnText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
   btnDisabled: {
     opacity: 0.45,
   },
-});
+  });
+}

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import {
   Modal,
   View,
@@ -8,11 +8,14 @@ import {
 } from "react-native";
 import LottieView from "lottie-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import { useAppTheme } from "../context/ThemeContext";
 
 // Free Lottie animation for confetti
 const LOTTIE_CONFETTI = "https://lottie.host/5a07231d-d47b-486a-8b7a-115f01e1490d/U9YmADb8P3.json";
 
 export default function LessonCompleteModal({ visible, onClose, xp }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const confettiRef = useRef(null);
 
   useEffect(() => {
@@ -42,7 +45,8 @@ export default function LessonCompleteModal({ visible, onClose, xp }) {
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
@@ -51,7 +55,7 @@ const styles = StyleSheet.create({
   },
   modalView: {
     width: "85%",
-    backgroundColor: "white",
+    backgroundColor: palette.card,
     borderRadius: 20,
     padding: scale(20),
     alignItems: "center",
@@ -70,7 +74,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: moderateScale(22),
     fontWeight: "bold",
-    color: "#0f172a",
+    color: palette.textPrimary,
     marginTop: scale(100), // Make space for lottie
   },
   modalSubtitle: {
@@ -93,4 +97,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: moderateScale(14),
   },
-});
+  });
+}

@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
+import { useAppTheme } from "../context/ThemeContext";
 
 export default function TradingViewChart({
   candles,
@@ -14,7 +15,30 @@ export default function TradingViewChart({
   showMACD,
   showVolume,
 }) {
+  const { isLight, palette } = useAppTheme();
   const html = useMemo(() => {
+    const chartTheme = isLight
+      ? {
+          background: "#ffffff",
+          text: "#334155",
+          border: "#cbd5e1",
+          grid: "#e2e8f0",
+          scaleBorder: "#cbd5e1",
+          volume: "#94a3b8",
+          rsi: "#2563eb",
+          overLine: "#94a3b8",
+        }
+      : {
+          background: "#0b1220",
+          text: "#cbd5e1",
+          border: "#1e293b",
+          grid: "#1e293b",
+          scaleBorder: "#334155",
+          volume: "#64748b",
+          rsi: "#60a5fa",
+          overLine: "#64748b",
+        };
+
     const payload = {
       candles: Array.isArray(candles) ? candles : [],
       ma: Array.isArray(maSeries) ? maSeries : [],
@@ -26,6 +50,7 @@ export default function TradingViewChart({
       showRSI: Boolean(showRSI),
       showMACD: Boolean(showMACD),
       showVolume: Boolean(showVolume),
+      theme: chartTheme,
     };
 
     return `<!doctype html>
@@ -39,8 +64,8 @@ export default function TradingViewChart({
         padding: 0;
         width: 100%;
         height: 100%;
-        background: #0b1220;
-        color: #cbd5e1;
+        background: ${chartTheme.background};
+        color: ${chartTheme.text};
         overflow: hidden;
         overscroll-behavior: none;
         touch-action: none;
@@ -48,7 +73,7 @@ export default function TradingViewChart({
         user-select: none;
       }
       #wrap { width: 100%; height: 100%; display: grid; grid-template-rows: var(--main-h) var(--ind-h); gap: 8px; box-sizing: border-box; padding: 8px; }
-      #main, #ind { width: 100%; height: 100%; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; }
+      #main, #ind { width: 100%; height: 100%; border: 1px solid ${chartTheme.border}; border-radius: 8px; overflow: hidden; }
     </style>
   </head>
   <body>
@@ -65,19 +90,19 @@ export default function TradingViewChart({
       if (!hasIndicatorPane) indEl.style.display = "none";
 
       const baseOptions = {
-        layout: { background: { color: "#0b1220" }, textColor: "#cbd5e1" },
-        grid: { vertLines: { color: "#1e293b" }, horzLines: { color: "#1e293b" } },
+        layout: { background: { color: p.theme.background }, textColor: p.theme.text },
+        grid: { vertLines: { color: p.theme.grid }, horzLines: { color: p.theme.grid } },
         rightPriceScale: {
           visible: true,
           borderVisible: true,
-          borderColor: "#334155",
+          borderColor: p.theme.scaleBorder,
           ticksVisible: true,
         },
         leftPriceScale: { visible: false },
         timeScale: {
           visible: true,
           borderVisible: true,
-          borderColor: "#334155",
+          borderColor: p.theme.scaleBorder,
           timeVisible: true,
           secondsVisible: false,
           ticksVisible: true,
@@ -112,12 +137,12 @@ export default function TradingViewChart({
       }
 
       if (p.showVolume) {
-        const vol = main.addHistogramSeries({
-          priceFormat: { type: "volume" },
-          priceScaleId: "vol",
-          color: "#64748b",
-          base: 0,
-        });
+          const vol = main.addHistogramSeries({
+            priceFormat: { type: "volume" },
+            priceScaleId: "vol",
+            color: p.theme.volume,
+            base: 0,
+          });
         main.priceScale("vol").applyOptions({
           scaleMargins: { top: 0.8, bottom: 0 },
           borderVisible: false,
@@ -136,16 +161,16 @@ export default function TradingViewChart({
       if (hasIndicatorPane) {
         ind = LightweightCharts.createChart(indEl, {
           ...baseOptions,
-          rightPriceScale: { borderColor: "#334155", scaleMargins: { top: 0.08, bottom: 0.08 } },
+          rightPriceScale: { borderColor: p.theme.scaleBorder, scaleMargins: { top: 0.08, bottom: 0.08 } },
         });
         let indPrimarySeries = null;
 
         if (p.showRSI && p.rsi.length) {
-          const rsi = ind.addLineSeries({ color: "#60a5fa", lineWidth: 2, priceLineVisible: false });
+          const rsi = ind.addLineSeries({ color: p.theme.rsi, lineWidth: 2, priceLineVisible: false });
           rsi.setData(p.rsi);
           indPrimarySeries = indPrimarySeries || rsi;
-          const overbought = ind.addLineSeries({ color: "#64748b", lineStyle: 2, lineWidth: 1, priceLineVisible: false });
-          const oversold = ind.addLineSeries({ color: "#64748b", lineStyle: 2, lineWidth: 1, priceLineVisible: false });
+          const overbought = ind.addLineSeries({ color: p.theme.overLine, lineStyle: 2, lineWidth: 1, priceLineVisible: false });
+          const oversold = ind.addLineSeries({ color: p.theme.overLine, lineStyle: 2, lineWidth: 1, priceLineVisible: false });
           overbought.setData(p.rsi.map((x) => ({ time: x.time, value: 70 })));
           oversold.setData(p.rsi.map((x) => ({ time: x.time, value: 30 })));
         }
@@ -265,10 +290,30 @@ export default function TradingViewChart({
     </script>
   </body>
 </html>`;
-  }, [candles, maSeries, rsiSeries, macdLine, macdSignal, macdHistogram, showMA, showRSI, showMACD, showVolume]);
+  }, [
+    candles,
+    maSeries,
+    rsiSeries,
+    macdLine,
+    macdSignal,
+    macdHistogram,
+    showMA,
+    showRSI,
+    showMACD,
+    showVolume,
+    isLight,
+  ]);
 
   return (
-    <View style={styles.wrap}>
+    <View
+      style={[
+        styles.wrap,
+        {
+          backgroundColor: isLight ? palette.card : "#0b1220",
+          borderColor: palette.cardBorder,
+        },
+      ]}
+    >
       <WebView
         source={{ html }}
         originWhitelist={["*"]}
@@ -290,7 +335,7 @@ const styles = StyleSheet.create({
     height: 380,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: "#0b1220",
+    borderWidth: 1,
   },
   webview: {
     flex: 1,

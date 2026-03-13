@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Activity } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
+import { useAppTheme } from "../context/ThemeContext";
 
 const sectors = [
   { name: "Banks", change: "+1.4%", tone: "#16a34a" },
@@ -27,6 +28,8 @@ const signals = [
 ];
 
 export default function MarketTrends() {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("Just now");
 
@@ -92,84 +95,88 @@ export default function MarketTrends() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  container: { flex: 1 },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: verticalScale(12),
-  },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: scale(8) },
-  header: {
-    fontSize: moderateScale(20),
-    fontWeight: "bold",
-    color: "#0f172a",
-  },
-  refreshButton: {
-    backgroundColor: "#eff6ff",
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    borderRadius: 999,
-  },
-  refreshText: { color: "#2563eb", fontSize: moderateScale(11), fontWeight: "600" },
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    backgroundColor: "#eff6ff",
-    borderRadius: 999,
-  },
-  pillText: { color: "#2563eb", fontSize: moderateScale(12), fontWeight: "600" },
-  updatedText: {
-    alignSelf: "flex-start",
-    fontSize: moderateScale(11),
-    color: "#64748b",
-    marginBottom: verticalScale(10),
-  },
-  signalCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#f8fafc",
-    borderRadius: 16,
-    padding: scale(14),
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    marginBottom: verticalScale(16),
-  },
-  signalItem: { alignItems: "center", flex: 1 },
-  signalLabel: { fontSize: moderateScale(12), color: "#64748b" },
-  signalValue: { fontSize: moderateScale(14), fontWeight: "700", color: "#0f172a" },
-  sectionHeader: {
-    fontSize: moderateScale(16),
-    fontWeight: "700",
-    color: "#0f172a",
-    marginBottom: verticalScale(10),
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: scale(10),
-  },
-  tile: {
-    width: "48%",
-    backgroundColor: "#f8fafc",
-    borderRadius: 16,
-    padding: scale(14),
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  colorChip: {
-    width: scale(12),
-    height: scale(12),
-    borderRadius: 6,
-    marginBottom: verticalScale(8),
-  },
-  tileName: { fontSize: moderateScale(14), fontWeight: "600", color: "#0f172a" },
-  tileChange: { fontSize: moderateScale(12), color: "#64748b", marginTop: 2 },
-  loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
-  loadingText: { color: "#2563eb", fontSize: moderateScale(12) },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: verticalScale(12),
+    },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: scale(8) },
+    header: {
+      fontSize: moderateScale(20),
+      fontWeight: "bold",
+      color: palette.textPrimary,
+    },
+    refreshButton: {
+      backgroundColor: palette.accentSoft,
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    refreshText: { color: palette.accent, fontSize: moderateScale(11), fontWeight: "600" },
+    pill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(6),
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      backgroundColor: palette.accentSoft,
+      borderRadius: 999,
+    },
+    pillText: { color: palette.accent, fontSize: moderateScale(12), fontWeight: "600" },
+    updatedText: {
+      alignSelf: "flex-start",
+      fontSize: moderateScale(11),
+      color: palette.textMuted,
+      marginBottom: verticalScale(10),
+    },
+    signalCard: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      backgroundColor: palette.cardSoft,
+      borderRadius: 16,
+      padding: scale(14),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      marginBottom: verticalScale(16),
+    },
+    signalItem: { alignItems: "center", flex: 1 },
+    signalLabel: { fontSize: moderateScale(12), color: palette.textMuted },
+    signalValue: { fontSize: moderateScale(14), fontWeight: "700", color: palette.textPrimary },
+    sectionHeader: {
+      fontSize: moderateScale(16),
+      fontWeight: "700",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(10),
+    },
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: scale(10),
+    },
+    tile: {
+      width: "48%",
+      backgroundColor: palette.cardSoft,
+      borderRadius: 16,
+      padding: scale(14),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    colorChip: {
+      width: scale(12),
+      height: scale(12),
+      borderRadius: 6,
+      marginBottom: verticalScale(8),
+    },
+    tileName: { fontSize: moderateScale(14), fontWeight: "600", color: palette.textPrimary },
+    tileChange: { fontSize: moderateScale(12), color: palette.textMuted, marginTop: 2 },
+    loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
+    loadingText: { color: palette.accent, fontSize: moderateScale(12) },
+  });
+}

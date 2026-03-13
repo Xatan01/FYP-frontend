@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  TextInput,
+  ScrollView,
 } from "react-native";
-import { LineChart, TrendingUp } from "lucide-react-native";
+import { LineChart, Search, TrendingUp } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
-import { fetchMarketChart } from "../api/market";
+import { fetchMarketChart, searchMarketSymbols } from "../api/market";
 import TradingViewChart from "../components/TradingViewChart";
+import { useAppTheme } from "../context/ThemeContext";
 
 const ranges = ["1D", "1W", "1M", "1Y"];
 const indicators = ["MA(20)", "RSI", "MACD", "Volume"];
@@ -135,9 +138,16 @@ function buildMacd(candles) {
   return { macdLine, signalLine, histogram };
 }
 
+function normalizeSymbol(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
 export default function Charting({ route }) {
-  const routeSymbol = String(route?.params?.symbol || "").trim().toUpperCase();
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
+  const routeSymbol = normalizeSymbol(route?.params?.symbol);
   const [symbol, setSymbol] = useState(routeSymbol || "AAPL");
+  const [symbolQuery, setSymbolQuery] = useState(routeSymbol || "");
   const [range, setRange] = useState(ranges[1]);
   const [activeIndicators, setActiveIndicators] = useState(["MA(20)", "Volume"]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +156,9 @@ export default function Charting({ route }) {
   const [candles, setCandles] = useState([]);
   const [price, setPrice] = useState(null);
   const [changePercent, setChangePercent] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const searchRequestSeq = useRef(0);
 
   const showMA = activeIndicators.includes("MA(20)");
   const showRSI = activeIndicators.includes("RSI");
@@ -162,11 +175,21 @@ export default function Charting({ route }) {
     );
   };
 
-  const loadChart = async () => {
+  const loadChart = async (targetSymbol = symbol) => {
+    const nextSymbol = normalizeSymbol(targetSymbol);
+    if (!nextSymbol) {
+      setError("Enter a valid symbol.");
+      setCandles([]);
+      setPrice(null);
+      setChangePercent(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
-      const data = await fetchMarketChart(symbol, range);
+      const data = await fetchMarketChart(nextSymbol, range);
       const mapped = (data?.points || [])
         .map((point) => {
           const ts = toTimestampMs(point);
@@ -196,6 +219,7 @@ export default function Charting({ route }) {
         }))
         .sort((a, b) => a.timestamp - b.timestamp);
 
+      setSymbol(nextSymbol);
       setCandles(mapped);
       setPrice(Number.isFinite(Number(data?.price)) ? Number(data.price) : null);
       setChangePercent(
@@ -213,27 +237,99 @@ export default function Charting({ route }) {
     }
   };
 
+  const handleSubmitSymbol = async (value = symbolQuery) => {
+    const nextSymbol = normalizeSymbol(value);
+    if (!nextSymbol) {
+      setError("Enter a valid symbol.");
+      return;
+    }
+
+    setSearchResults([]);
+    setSearchLoading(false);
+
+    if (nextSymbol !== symbol) {
+      setSymbol(nextSymbol);
+      setSymbolQuery(nextSymbol);
+      return;
+    }
+
+    await loadChart(nextSymbol);
+  };
+
   useEffect(() => {
-    if (routeSymbol && routeSymbol !== symbol) setSymbol(routeSymbol);
-  }, [routeSymbol, symbol]);
+    if (!routeSymbol) return;
+    setSymbol(routeSymbol);
+    setSymbolQuery(routeSymbol);
+  }, [routeSymbol]);
 
   useEffect(() => {
     loadChart();
   }, [range, symbol]);
 
+  useEffect(() => {
+    const query = String(symbolQuery || "").trim();
+    const requestId = searchRequestSeq.current + 1;
+    searchRequestSeq.current = requestId;
+
+    if (query.length < 2 || normalizeSymbol(query) === symbol) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await searchMarketSymbols(query, 6);
+        const rawResults = Array.isArray(res?.results) ? res.results : [];
+        const dedupedBySymbol = [];
+        const seen = new Set();
+
+        rawResults.forEach((item) => {
+          const nextSymbol = normalizeSymbol(item?.symbol);
+          if (!nextSymbol || seen.has(nextSymbol)) return;
+          seen.add(nextSymbol);
+          dedupedBySymbol.push({
+            ...item,
+            symbol: nextSymbol,
+          });
+        });
+
+        if (requestId === searchRequestSeq.current) {
+          setSearchResults(dedupedBySymbol);
+        }
+      } catch {
+        if (requestId === searchRequestSeq.current) {
+          setSearchResults([]);
+        }
+      } finally {
+        if (requestId === searchRequestSeq.current) {
+          setSearchLoading(false);
+        }
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [symbolQuery]);
+
   const priceText = price === null ? "--" : `$${price.toFixed(2)}`;
   const changeText =
     changePercent === null ? "--" : `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(2)}%`;
   const changeTone =
-    changePercent === null ? "#64748b" : changePercent >= 0 ? "#16a34a" : "#dc2626";
+    changePercent === null ? palette.textMuted : changePercent >= 0 ? palette.success : "#dc2626";
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={[styles.container, { padding: scale(16) }]}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ padding: scale(16), paddingBottom: verticalScale(24) }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
           <Text style={styles.header}>Charting Tools</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.refreshButton} onPress={loadChart}>
+            <TouchableOpacity style={styles.refreshButton} onPress={() => loadChart(symbol)}>
               <Text style={styles.refreshText}>Refresh</Text>
             </TouchableOpacity>
             <View style={styles.badge}>
@@ -245,6 +341,50 @@ export default function Charting({ route }) {
 
         <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
         {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+        <View style={styles.searchCard}>
+          <Text style={styles.searchTitle}>Search Symbol</Text>
+          <View style={styles.searchRow}>
+            <View style={styles.searchInputWrap}>
+              <Search size={16} color="#94a3b8" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Enter symbol (e.g. AAPL)"
+                placeholderTextColor={palette.textMuted}
+                value={symbolQuery}
+                onChangeText={setSymbolQuery}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                onSubmitEditing={() => handleSubmitSymbol()}
+                returnKeyType="search"
+              />
+            </View>
+            <TouchableOpacity style={styles.searchButton} onPress={() => handleSubmitSymbol()}>
+              <Text style={styles.searchButtonText}>Load</Text>
+            </TouchableOpacity>
+          </View>
+
+          {searchLoading ? <Text style={styles.searchHint}>Searching symbols...</Text> : null}
+          {!searchLoading && symbolQuery.trim().length >= 2 && !searchResults.length ? (
+            <Text style={styles.searchHint}>No matching symbols found.</Text>
+          ) : null}
+
+          {searchResults.map((item) => (
+            <TouchableOpacity
+              key={item.symbol}
+              style={styles.searchResult}
+              onPress={() => handleSubmitSymbol(item.symbol)}
+            >
+              <View>
+                <Text style={styles.searchResultSymbol}>{item.symbol}</Text>
+                <Text style={styles.searchResultName} numberOfLines={1}>
+                  {item.name || item.symbol}
+                </Text>
+              </View>
+              <Text style={styles.searchResultAction}>View chart</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {loading ? (
           <View style={styles.loading}>
@@ -311,125 +451,212 @@ export default function Charting({ route }) {
             })}
           </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
-  container: { flex: 1 },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: verticalScale(12),
-  },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: scale(8) },
-  header: {
-    fontSize: moderateScale(22),
-    fontWeight: "bold",
-    color: "#f8fafc",
-  },
-  refreshButton: {
-    backgroundColor: "#1e293b",
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    borderRadius: 999,
-  },
-  refreshText: { color: "#93c5fd", fontSize: moderateScale(11), fontWeight: "600" },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    backgroundColor: "#064e3b",
-    borderRadius: 999,
-  },
-  badgeText: { color: "#6ee7b7", fontSize: moderateScale(12), fontWeight: "600" },
-  updatedText: {
-    alignSelf: "flex-start",
-    fontSize: moderateScale(11),
-    color: "#94a3b8",
-    marginBottom: verticalScale(10),
-  },
-  errorText: {
-    alignSelf: "flex-start",
-    color: "#fca5a5",
-    fontSize: moderateScale(12),
-    marginBottom: verticalScale(10),
-  },
-  card: {
-    backgroundColor: "#0f172a",
-    borderRadius: 16,
-    padding: scale(16),
-    borderWidth: 1,
-    borderColor: "#1e293b",
-  },
-  symbolRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-    marginBottom: verticalScale(12),
-  },
-  symbol: { fontSize: moderateScale(16), fontWeight: "700", color: "#f8fafc" },
-  price: { fontSize: moderateScale(14), fontWeight: "600", color: "#f8fafc" },
-  change: { fontSize: moderateScale(12), marginLeft: "auto" },
-  rangeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: verticalScale(12),
-  },
-  rangeButton: {
-    paddingVertical: verticalScale(4),
-    paddingHorizontal: scale(10),
-    borderRadius: 999,
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  rangeText: { fontSize: moderateScale(12), color: "#94a3b8", fontWeight: "600" },
-  rangeTextActive: { color: "#93c5fd" },
-  emptyChartWrap: {
-    minHeight: verticalScale(220),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyChartText: {
-    color: "#94a3b8",
-    fontSize: moderateScale(12),
-  },
-  secondaryCard: {
-    marginTop: verticalScale(16),
-    backgroundColor: "#0f172a",
-    borderRadius: 16,
-    padding: scale(16),
-    borderWidth: 1,
-    borderColor: "#1e293b",
-  },
-  secondaryHeader: {
-    fontSize: moderateScale(14),
-    fontWeight: "700",
-    color: "#e2e8f0",
-    marginBottom: verticalScale(8),
-  },
-  indicatorRow: { flexDirection: "row", flexWrap: "wrap", gap: scale(8) },
-  indicator: {
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(6),
-    backgroundColor: "#111827",
-    borderRadius: 10,
-  },
-  indicatorActive: {
-    backgroundColor: "#2563eb",
-  },
-  indicatorText: {
-    fontSize: moderateScale(12),
-    color: "#cbd5e1",
-    fontWeight: "600",
-  },
-  indicatorTextActive: { color: "#fff" },
-  loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
-  loadingText: { color: "#93c5fd", fontSize: moderateScale(12) },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: verticalScale(12),
+    },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: scale(8) },
+    header: {
+      fontSize: moderateScale(22),
+      fontWeight: "bold",
+      color: palette.textPrimary,
+    },
+    refreshButton: {
+      backgroundColor: palette.cardMuted,
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    refreshText: { color: palette.tabActive, fontSize: moderateScale(11), fontWeight: "600" },
+    badge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(6),
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      backgroundColor: palette.successSoft,
+      borderRadius: 999,
+    },
+    badgeText: { color: palette.success, fontSize: moderateScale(12), fontWeight: "600" },
+    updatedText: {
+      alignSelf: "flex-start",
+      fontSize: moderateScale(11),
+      color: palette.textMuted,
+      marginBottom: verticalScale(10),
+    },
+    searchCard: {
+      marginBottom: verticalScale(16),
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(14),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    searchTitle: {
+      fontSize: moderateScale(14),
+      fontWeight: "700",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(8),
+    },
+    searchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+    },
+    searchInputWrap: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+      backgroundColor: palette.input,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      borderRadius: 12,
+      paddingHorizontal: scale(10),
+    },
+    searchInput: {
+      flex: 1,
+      paddingVertical: verticalScale(10),
+      color: palette.textPrimary,
+      fontSize: moderateScale(12),
+    },
+    searchButton: {
+      backgroundColor: palette.accent,
+      borderRadius: 12,
+      paddingHorizontal: scale(14),
+      paddingVertical: verticalScale(10),
+    },
+    searchButtonText: {
+      color: palette.white,
+      fontSize: moderateScale(12),
+      fontWeight: "700",
+    },
+    searchHint: {
+      color: palette.textMuted,
+      fontSize: moderateScale(11),
+      marginTop: verticalScale(8),
+    },
+    searchResult: {
+      marginTop: verticalScale(8),
+      backgroundColor: palette.cardSoft,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      padding: scale(10),
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: scale(10),
+    },
+    searchResultSymbol: {
+      color: palette.textPrimary,
+      fontSize: moderateScale(13),
+      fontWeight: "700",
+    },
+    searchResultName: {
+      color: palette.textMuted,
+      fontSize: moderateScale(11),
+      marginTop: verticalScale(2),
+      maxWidth: scale(180),
+    },
+    searchResultAction: {
+      color: palette.tabActive,
+      fontSize: moderateScale(11),
+      fontWeight: "700",
+    },
+    errorText: {
+      alignSelf: "flex-start",
+      color: palette.danger,
+      fontSize: moderateScale(12),
+      marginBottom: verticalScale(10),
+    },
+    card: {
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(16),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    symbolRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+      marginBottom: verticalScale(12),
+    },
+    symbol: { fontSize: moderateScale(16), fontWeight: "700", color: palette.textPrimary },
+    price: { fontSize: moderateScale(14), fontWeight: "600", color: palette.textPrimary },
+    change: { fontSize: moderateScale(12), marginLeft: "auto" },
+    rangeRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: verticalScale(12),
+    },
+    rangeButton: {
+      paddingVertical: verticalScale(4),
+      paddingHorizontal: scale(10),
+      borderRadius: 999,
+      backgroundColor: palette.cardSoft,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+    },
+    rangeText: { fontSize: moderateScale(12), color: palette.textMuted, fontWeight: "600" },
+    rangeTextActive: { color: palette.tabActive },
+    emptyChartWrap: {
+      minHeight: verticalScale(220),
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    emptyChartText: {
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+    },
+    secondaryCard: {
+      marginTop: verticalScale(16),
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(16),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    secondaryHeader: {
+      fontSize: moderateScale(14),
+      fontWeight: "700",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(8),
+    },
+    indicatorRow: { flexDirection: "row", flexWrap: "wrap", gap: scale(8) },
+    indicator: {
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(6),
+      backgroundColor: palette.cardSoft,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    indicatorActive: {
+      backgroundColor: palette.accent,
+      borderColor: palette.accent,
+    },
+    indicatorText: {
+      fontSize: moderateScale(12),
+      color: palette.textSecondary,
+      fontWeight: "600",
+    },
+    indicatorTextActive: { color: palette.white },
+    loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
+    loadingText: { color: palette.tabActive, fontSize: moderateScale(12) },
+  });
+}

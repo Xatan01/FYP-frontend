@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -12,8 +12,11 @@ import {
 import { Bell, Filter, Flame } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import usePersistedState from "../hooks/usePersistedState";
+import { useAppTheme } from "../context/ThemeContext";
 
 export default function AlertsSettings() {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const {
     value: settings,
     setValue: setSettings,
@@ -78,6 +81,8 @@ export default function AlertsSettings() {
               <Switch
                 value={settings.priceAlerts}
                 onValueChange={() => toggle("priceAlerts")}
+                thumbColor={isLight ? palette.white : "#e2e8f0"}
+                trackColor={{ false: palette.textMuted, true: palette.accent }}
               />
             </View>
 
@@ -92,6 +97,8 @@ export default function AlertsSettings() {
               <Switch
                 value={settings.newsAlerts}
                 onValueChange={() => toggle("newsAlerts")}
+                thumbColor={isLight ? palette.white : "#e2e8f0"}
+                trackColor={{ false: palette.textMuted, true: palette.accent }}
               />
             </View>
 
@@ -106,6 +113,8 @@ export default function AlertsSettings() {
               <Switch
                 value={settings.marketOpenAlerts}
                 onValueChange={() => toggle("marketOpenAlerts")}
+                thumbColor={isLight ? palette.white : "#e2e8f0"}
+                trackColor={{ false: palette.textMuted, true: palette.accent }}
               />
             </View>
 
@@ -120,6 +129,8 @@ export default function AlertsSettings() {
               <Switch
                 value={settings.highVolAlerts}
                 onValueChange={() => toggle("highVolAlerts")}
+                thumbColor={isLight ? palette.white : "#e2e8f0"}
+                trackColor={{ false: palette.textMuted, true: palette.accent }}
               />
             </View>
           </View>
@@ -129,59 +140,61 @@ export default function AlertsSettings() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  container: { flex: 1 },
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: scale(8),
-  },
-  loadingText: { color: "#64748b", fontSize: moderateScale(12) },
-  header: {
-    fontSize: moderateScale(22),
-    fontWeight: "bold",
-    color: "#0f172a",
-    marginBottom: verticalScale(12),
-  },
-  error: {
-    color: "#dc2626",
-    fontSize: moderateScale(12),
-    marginBottom: verticalScale(10),
-  },
-  noticeCard: {
-    backgroundColor: "#eff6ff",
-    borderRadius: 16,
-    padding: scale(14),
-    borderWidth: 1,
-    borderColor: "#bfdbfe",
-    marginBottom: verticalScale(12),
-  },
-  noticeTitle: { fontSize: moderateScale(14), fontWeight: "700", color: "#1e3a8a" },
-  noticeText: { fontSize: moderateScale(12), color: "#1e40af", marginTop: 4 },
-  enableButton: {
-    marginTop: verticalScale(10),
-    backgroundColor: "#2563eb",
-    borderRadius: 12,
-    paddingVertical: verticalScale(8),
-    alignItems: "center",
-  },
-  enableText: { color: "#fff", fontSize: moderateScale(12), fontWeight: "600" },
-  card: {
-    backgroundColor: "#f8fafc",
-    borderRadius: 16,
-    padding: scale(16),
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: verticalScale(14),
-  },
-  rowLeft: { flexDirection: "row", alignItems: "center", gap: scale(10) },
-  label: { fontSize: moderateScale(14), fontWeight: "600", color: "#0f172a" },
-  subLabel: { fontSize: moderateScale(11), color: "#64748b" },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    loading: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: scale(8),
+    },
+    loadingText: { color: palette.textMuted, fontSize: moderateScale(12) },
+    header: {
+      fontSize: moderateScale(22),
+      fontWeight: "bold",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(12),
+    },
+    error: {
+      color: palette.danger,
+      fontSize: moderateScale(12),
+      marginBottom: verticalScale(10),
+    },
+    noticeCard: {
+      backgroundColor: palette.accentSoft,
+      borderRadius: 16,
+      padding: scale(14),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      marginBottom: verticalScale(12),
+    },
+    noticeTitle: { fontSize: moderateScale(14), fontWeight: "700", color: palette.textPrimary },
+    noticeText: { fontSize: moderateScale(12), color: palette.textSecondary, marginTop: 4 },
+    enableButton: {
+      marginTop: verticalScale(10),
+      backgroundColor: palette.accent,
+      borderRadius: 12,
+      paddingVertical: verticalScale(8),
+      alignItems: "center",
+    },
+    enableText: { color: palette.white, fontSize: moderateScale(12), fontWeight: "600" },
+    card: {
+      backgroundColor: palette.cardSoft,
+      borderRadius: 16,
+      padding: scale(16),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: verticalScale(14),
+    },
+    rowLeft: { flexDirection: "row", alignItems: "center", gap: scale(10) },
+    label: { fontSize: moderateScale(14), fontWeight: "600", color: palette.textPrimary },
+    subLabel: { fontSize: moderateScale(11), color: palette.textMuted },
+  });
+}

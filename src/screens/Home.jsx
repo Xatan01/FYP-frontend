@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import {
@@ -13,6 +13,7 @@ import {
   Star,
   Play,
   Brain,
+  BarChart3,
   LineChart,
   Eye,
   Newspaper,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react-native";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAppTheme } from "../context/ThemeContext";
 
 // Free Lottie animation for the streak flame
 const LOTTIE_FLAME = "https://lottie.host/0f6b4d3c-1191-4e4f-b1e0-466a9bafaa26/uNFITb1eim.json";
@@ -38,19 +40,69 @@ const aiRecommendation = {
 };
 
 export default function Home({ userData, learningPath, navigation }) {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const { width } = useWindowDimensions();
   const safeUser = userData ?? { name: "User", xp: 0, streak: 0, league: "Bronze" };
   const safeLearningPath = Array.isArray(learningPath) ? learningPath : [];
 
   const quickActions = [
-    { label: "Virtual Market", icon: LineChart, route: "VirtualMarket", tone: "#0f766e" },
-    { label: "Journal", icon: NotebookPen, route: "TradingJournal", tone: "#0ea5e9" },
-    { label: "Watchlist", icon: Eye, route: "Watchlist", tone: "#2563eb" },
-    { label: "Trends", icon: Brain, route: "MarketTrends", tone: "#16a34a" },
-    { label: "AI Insights", icon: Sparkles, route: "AiInsights", tone: "#f59e0b" },
-    { label: "News", icon: Newspaper, route: "News", tone: "#b45309" },
-    { label: "Leaderboard", icon: Trophy, route: "Community", tone: "#8b5cf6" },
-    { label: "Shop", icon: ShoppingBag, route: "Profile", tone: "#6366f1" },
+    {
+      label: "Virtual Market",
+      description: "Practice entries and exits without risking capital.",
+      icon: LineChart,
+      route: "VirtualMarket",
+      tone: "#0f766e",
+    },
+    {
+      label: "Journal",
+      description: "Capture trade notes, setups, and post-trade reviews.",
+      icon: NotebookPen,
+      route: "TradingJournal",
+      tone: "#0ea5e9",
+    },
+    {
+      label: "Watchlist",
+      description: "Track saved names and open your top ideas faster.",
+      icon: Eye,
+      route: "Watchlist",
+      tone: "#2563eb",
+    },
+    {
+      label: "Charting Tools",
+      description: "Open live charts and layer indicators across timeframes.",
+      icon: BarChart3,
+      route: "Charting",
+      tone: "#1d4ed8",
+    },
+    {
+      label: "AI Insights",
+      description: "Review model signals tied to your watchlist and sectors.",
+      icon: Sparkles,
+      route: "AiInsights",
+      tone: "#f59e0b",
+    },
+    {
+      label: "News",
+      description: "Scan the latest headlines affecting markets and themes.",
+      icon: Newspaper,
+      route: "News",
+      tone: "#b45309",
+    },
+    {
+      label: "Leaderboard",
+      description: "See how your progress stacks up against the community.",
+      icon: Trophy,
+      route: "Community",
+      tone: "#8b5cf6",
+    },
+    {
+      label: "Shop",
+      description: "Browse profile rewards and unlockable customizations.",
+      icon: ShoppingBag,
+      route: "Profile",
+      tone: "#6366f1",
+    },
   ];
 
   // Find the next lesson for the "Continue" button
@@ -111,6 +163,7 @@ export default function Home({ userData, learningPath, navigation }) {
                 <action.icon size={18} color="#fff" />
               </View>
               <Text style={styles.quickLabel}>{action.label}</Text>
+              <Text style={styles.quickDescription}>{action.description}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -124,7 +177,7 @@ export default function Home({ userData, learningPath, navigation }) {
               onPress={() => navigation.navigate("Learn")}
             >
               <LinearGradient
-                colors={["#22c55e", "#15803d"]}
+                colors={isLight ? ["#22c55e", "#15803d"] : ["#166534", "#14532d"]}
                 style={StyleSheet.absoluteFillObject}
               />
               <View>
@@ -159,136 +212,144 @@ export default function Home({ userData, learningPath, navigation }) {
 }
 
 // Add these new styles to your existing Home styles
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { flex: 1 },
-  greeting: {
-    fontSize: moderateScale(24),
-    fontWeight: "bold",
-    color: "#0f172a",
-    marginTop: verticalScale(4),
-  },
-  name: { color: "#2563eb" },
-  statsBar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: scale(12),
-    marginVertical: verticalScale(16),
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  statItem: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statText: {
-    fontSize: moderateScale(13),
-    fontWeight: "600",
-    color: "#334155",
-    marginLeft: scale(4),
-  },
-  sectionHeader: {
-    fontSize: moderateScale(16),
-    fontWeight: "700",
-    color: "#0f172a",
-    marginBottom: verticalScale(10),
-  },
-  quickGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: scale(12),
-    marginBottom: verticalScale(6),
-  },
-  quickCard: {
-    width: "48%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: scale(12),
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    alignItems: "center",
-  },
-  quickIcon: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(18),
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: verticalScale(6),
-  },
-  quickLabel: {
-    fontSize: moderateScale(11),
-    fontWeight: "600",
-    color: "#0f172a",
-  },
-  learnCard: {
-    borderRadius: 16,
-    padding: scale(16),
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  learnTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  learnSubtitle: {
-    fontSize: moderateScale(13),
-    color: "#f0f9ff",
-    marginTop: 2,
-  },
-  // New AI Card Styles
-  aiCard: {
-    backgroundColor: "#f3e8ff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#e9d5ff",
-    padding: scale(16),
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    overflow: 'hidden',
-  },
-  aiTextContainer: {
-    flex: 1,
-    paddingRight: scale(8),
-  },
-  aiHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(4),
-  },
-  aiTitle: {
-    fontSize: moderateScale(14),
-    fontWeight: "bold",
-    color: "#6b21a8",
-    marginLeft: scale(4),
-  },
-  aiDescription: {
-    fontSize: moderateScale(12),
-    color: "#581c87",
-    marginBottom: verticalScale(6),
-  },
-  aiReward: {
-    fontSize: moderateScale(12),
-    fontWeight: 'bold',
-    color: "#6b21a8",
-  },
-  aiLottie: {
-    width: scale(70),
-    height: scale(70),
-    marginLeft: scale(4),
-  },
-  // Subtitle from your original file
-  subtitle: {
-    fontSize: moderateScale(13),
-    color: "#64748b",
-    marginBottom: verticalScale(4), // Adjusted margin
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    greeting: {
+      fontSize: moderateScale(24),
+      fontWeight: "bold",
+      color: palette.textPrimary,
+      marginTop: verticalScale(4),
+    },
+    name: { color: palette.accent },
+    statsBar: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(12),
+      marginVertical: verticalScale(16),
+      shadowColor: palette.shadow,
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    statItem: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    statText: {
+      fontSize: moderateScale(13),
+      fontWeight: "600",
+      color: palette.textSecondary,
+      marginLeft: scale(4),
+    },
+    sectionHeader: {
+      fontSize: moderateScale(16),
+      fontWeight: "700",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(10),
+    },
+    quickGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: scale(12),
+      marginBottom: verticalScale(6),
+    },
+    quickCard: {
+      width: "48%",
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(12),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      minHeight: verticalScale(120),
+    },
+    quickIcon: {
+      width: scale(36),
+      height: scale(36),
+      borderRadius: scale(18),
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: verticalScale(8),
+    },
+    quickLabel: {
+      fontSize: moderateScale(12),
+      fontWeight: "700",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(4),
+    },
+    quickDescription: {
+      fontSize: moderateScale(10.5),
+      lineHeight: moderateScale(15),
+      color: palette.textSecondary,
+    },
+    learnCard: {
+      borderRadius: 16,
+      padding: scale(16),
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      overflow: "hidden",
+    },
+    learnTitle: {
+      fontSize: moderateScale(16),
+      fontWeight: "bold",
+      color: palette.white,
+    },
+    learnSubtitle: {
+      fontSize: moderateScale(13),
+      color: "#f0f9ff",
+      marginTop: 2,
+    },
+    aiCard: {
+      backgroundColor: palette.purpleSoft,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: palette.purpleBorder,
+      padding: scale(16),
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      overflow: "hidden",
+    },
+    aiTextContainer: {
+      flex: 1,
+      paddingRight: scale(8),
+    },
+    aiHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: verticalScale(4),
+    },
+    aiTitle: {
+      fontSize: moderateScale(14),
+      fontWeight: "bold",
+      color: palette.purpleText,
+      marginLeft: scale(4),
+    },
+    aiDescription: {
+      fontSize: moderateScale(12),
+      color: palette.purpleText,
+      marginBottom: verticalScale(6),
+    },
+    aiReward: {
+      fontSize: moderateScale(12),
+      fontWeight: "bold",
+      color: palette.purpleText,
+    },
+    aiLottie: {
+      width: scale(70),
+      height: scale(70),
+      marginLeft: scale(4),
+    },
+    subtitle: {
+      fontSize: moderateScale(13),
+      color: palette.textMuted,
+      marginBottom: verticalScale(4),
+    },
+  });
+}

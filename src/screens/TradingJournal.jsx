@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -18,6 +18,7 @@ import {
   fetchJournalEntries,
   updateJournalEntry,
 } from "../api/tradingJournal";
+import { useAppTheme } from "../context/ThemeContext";
 
 function parsePnlAmount(rawValue) {
   const normalized = String(rawValue || "").trim();
@@ -44,6 +45,8 @@ function formatPnlInput(rawValue) {
 }
 
 export default function TradingJournal({ navigation }) {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -148,7 +151,7 @@ export default function TradingJournal({ navigation }) {
     <SafeAreaView style={styles.safe}>
       {loading ? (
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={palette.accent} />
           <Text style={styles.loadingText}>Loading journal...</Text>
         </View>
       ) : (
@@ -158,12 +161,12 @@ export default function TradingJournal({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <ChevronLeft size={16} color="#bfdbfe" />
+            <ChevronLeft size={16} color={palette.accentSoftText} />
             <Text style={styles.backBtnText}>Back</Text>
           </TouchableOpacity>
 
           <LinearGradient
-            colors={["#1e293b", "#0f172a"]}
+            colors={isLight ? ["#dbeafe", "#eff6ff"] : ["#1e293b", "#0f172a"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.hero}
@@ -178,7 +181,7 @@ export default function TradingJournal({ navigation }) {
               onPress={handleSubmit}
               disabled={saving}
             >
-              <Plus size={15} color="#dbeafe" />
+              <Plus size={15} color={palette.accentSoftText} />
               <Text style={styles.heroAddText}>
                 {saving ? "Saving..." : editingId ? "Save Entry" : "Add Entry"}
               </Text>
@@ -201,7 +204,7 @@ export default function TradingJournal({ navigation }) {
                 <TextInput
                   style={styles.formInput}
                   placeholder="AAPL"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={palette.textMuted}
                   value={symbol}
                   onChangeText={setSymbol}
                   autoCapitalize="characters"
@@ -211,7 +214,7 @@ export default function TradingJournal({ navigation }) {
                 <TextInput
                   style={styles.formInput}
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={palette.textMuted}
                   value={date}
                   onChangeText={setDate}
                 />
@@ -220,14 +223,14 @@ export default function TradingJournal({ navigation }) {
             <TextInput
               style={styles.formInput}
               placeholder="P/L e.g. +120"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={palette.textMuted}
               value={pnl}
               onChangeText={setPnl}
             />
             <TextInput
               style={[styles.formInput, styles.formNote]}
               placeholder="Notes"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={palette.textMuted}
               value={note}
               onChangeText={setNote}
               multiline
@@ -259,7 +262,7 @@ export default function TradingJournal({ navigation }) {
             return (
               <View key={entry.entry_id} style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <NotebookPen size={16} color="#93c5fd" />
+                  <NotebookPen size={16} color={palette.accentSoftText} />
                   <Text style={styles.symbol}>{entry.symbol}</Text>
                   <Text style={styles.date}>{entry.entry_date}</Text>
                   <Text
@@ -305,179 +308,183 @@ export default function TradingJournal({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
-  container: { flex: 1 },
-  content: { padding: scale(18), paddingBottom: verticalScale(48) },
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: scale(8),
-    backgroundColor: "#020617",
-  },
-  loadingText: { color: "#94a3b8", fontSize: moderateScale(12) },
-  backBtn: {
-    marginBottom: verticalScale(12),
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(4),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(8),
-    borderRadius: 999,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "#1e293b",
-  },
-  backBtnText: { color: "#bfdbfe", fontSize: moderateScale(13), fontWeight: "700" },
-  hero: {
-    borderRadius: 20,
-    padding: scale(18),
-    borderWidth: 1,
-    borderColor: "#334155",
-    marginBottom: verticalScale(14),
-  },
-  eyebrow: {
-    color: "#7dd3fc",
-    fontSize: moderateScale(11),
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    marginBottom: verticalScale(6),
-  },
-  header: {
-    color: "#e2e8f0",
-    fontSize: moderateScale(24),
-    fontWeight: "800",
-    marginBottom: verticalScale(6),
-  },
-  subtitle: {
-    color: "#94a3b8",
-    fontSize: moderateScale(13),
-    marginBottom: verticalScale(12),
-  },
-  heroAddButton: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    backgroundColor: "#1e3a8a",
-    borderRadius: 10,
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
-  },
-  heroAddText: { color: "#dbeafe", fontSize: moderateScale(12), fontWeight: "700" },
-  errorCard: {
-    backgroundColor: "#0f172a",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#7f1d1d",
-    padding: scale(10),
-    marginBottom: verticalScale(10),
-  },
-  error: {
-    color: "#fca5a5",
-    fontSize: moderateScale(12),
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  formCard: {
-    backgroundColor: "#0f172a",
-    borderRadius: 16,
-    padding: scale(14),
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    marginBottom: verticalScale(12),
-  },
-  formRow: { flexDirection: "row", gap: scale(10), marginBottom: verticalScale(8) },
-  formLabel: { flex: 1, fontSize: moderateScale(11), color: "#94a3b8" },
-  formInputWrap: { flex: 1 },
-  formInput: {
-    backgroundColor: "#111827",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#334155",
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(9),
-    fontSize: moderateScale(12),
-    color: "#f8fafc",
-    marginBottom: verticalScale(8),
-  },
-  formNote: { minHeight: verticalScale(70), textAlignVertical: "top" },
-  formActions: { flexDirection: "row", gap: scale(10) },
-  saveButton: {
-    flex: 1,
-    backgroundColor: "#2563eb",
-    borderRadius: 10,
-    paddingVertical: verticalScale(10),
-    alignItems: "center",
-  },
-  saveText: { color: "#eff6ff", fontSize: moderateScale(12), fontWeight: "700" },
-  cancelButton: {
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#334155",
-    borderRadius: 10,
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(14),
-    alignItems: "center",
-  },
-  cancelText: { color: "#cbd5e1", fontSize: moderateScale(12), fontWeight: "700" },
-  sectionHeader: {
-    color: "#e2e8f0",
-    fontSize: moderateScale(14),
-    fontWeight: "700",
-    marginBottom: verticalScale(8),
-  },
-  card: {
-    backgroundColor: "#0f172a",
-    borderRadius: 16,
-    padding: scale(14),
-    marginBottom: verticalScale(12),
-    borderWidth: 1,
-    borderColor: "#1e293b",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-    marginBottom: verticalScale(6),
-  },
-  symbol: { fontSize: moderateScale(14), fontWeight: "700", color: "#e2e8f0" },
-  date: { fontSize: moderateScale(12), color: "#94a3b8" },
-  pnl: { marginLeft: "auto", fontSize: moderateScale(12), fontWeight: "700" },
-  pnlUp: { color: "#86efac" },
-  pnlDown: { color: "#fca5a5" },
-  pnlNeutral: { color: "#cbd5e1" },
-  note: { fontSize: moderateScale(13), color: "#cbd5e1" },
-  cardActions: {
-    flexDirection: "row",
-    gap: scale(8),
-    marginTop: verticalScale(8),
-  },
-  editButton: {
-    backgroundColor: "#1e3a8a",
-    borderWidth: 1,
-    borderColor: "#334155",
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    borderRadius: 10,
-  },
-  editText: { color: "#dbeafe", fontSize: moderateScale(11), fontWeight: "700" },
-  deleteButton: {
-    backgroundColor: "#7f1d1d",
-    borderWidth: 1,
-    borderColor: "#991b1b",
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    borderRadius: 10,
-  },
-  deleteText: { color: "#fecaca", fontSize: moderateScale(11), fontWeight: "700" },
-  emptyState: {
-    textAlign: "center",
-    color: "#64748b",
-    fontSize: moderateScale(12),
-    marginTop: verticalScale(12),
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    content: { padding: scale(18), paddingBottom: verticalScale(48) },
+    loading: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: scale(8),
+      backgroundColor: palette.background,
+    },
+    loadingText: { color: palette.textMuted, fontSize: moderateScale(12) },
+    backBtn: {
+      marginBottom: verticalScale(12),
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(4),
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(8),
+      borderRadius: 999,
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    backBtnText: { color: palette.accentSoftText, fontSize: moderateScale(13), fontWeight: "700" },
+    hero: {
+      borderRadius: 20,
+      padding: scale(18),
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      marginBottom: verticalScale(14),
+    },
+    eyebrow: {
+      color: palette.accentSoftText,
+      fontSize: moderateScale(11),
+      fontWeight: "800",
+      letterSpacing: 0.8,
+      marginBottom: verticalScale(6),
+    },
+    header: {
+      color: palette.textPrimary,
+      fontSize: moderateScale(24),
+      fontWeight: "800",
+      marginBottom: verticalScale(6),
+    },
+    subtitle: {
+      color: palette.textMuted,
+      fontSize: moderateScale(13),
+      marginBottom: verticalScale(12),
+    },
+    heroAddButton: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(6),
+      backgroundColor: palette.accentSoft,
+      borderWidth: 1,
+      borderColor: palette.accent,
+      borderRadius: 10,
+      paddingHorizontal: scale(12),
+      paddingVertical: verticalScale(8),
+    },
+    heroAddText: { color: palette.accentSoftText, fontSize: moderateScale(12), fontWeight: "700" },
+    errorCard: {
+      backgroundColor: palette.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: palette.danger,
+      padding: scale(10),
+      marginBottom: verticalScale(10),
+    },
+    error: {
+      color: palette.danger,
+      fontSize: moderateScale(12),
+    },
+    buttonDisabled: {
+      opacity: 0.55,
+    },
+    formCard: {
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(14),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      marginBottom: verticalScale(12),
+    },
+    formRow: { flexDirection: "row", gap: scale(10), marginBottom: verticalScale(8) },
+    formLabel: { flex: 1, fontSize: moderateScale(11), color: palette.textMuted },
+    formInputWrap: { flex: 1 },
+    formInput: {
+      backgroundColor: palette.input,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(9),
+      fontSize: moderateScale(12),
+      color: palette.textPrimary,
+      marginBottom: verticalScale(8),
+    },
+    formNote: { minHeight: verticalScale(70), textAlignVertical: "top" },
+    formActions: { flexDirection: "row", gap: scale(10) },
+    saveButton: {
+      flex: 1,
+      backgroundColor: palette.accent,
+      borderRadius: 10,
+      paddingVertical: verticalScale(10),
+      alignItems: "center",
+    },
+    saveText: { color: palette.white, fontSize: moderateScale(12), fontWeight: "700" },
+    cancelButton: {
+      backgroundColor: palette.cardSoft,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      borderRadius: 10,
+      paddingVertical: verticalScale(10),
+      paddingHorizontal: scale(14),
+      alignItems: "center",
+    },
+    cancelText: { color: palette.textSecondary, fontSize: moderateScale(12), fontWeight: "700" },
+    sectionHeader: {
+      color: palette.textPrimary,
+      fontSize: moderateScale(14),
+      fontWeight: "700",
+      marginBottom: verticalScale(8),
+    },
+    card: {
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(14),
+      marginBottom: verticalScale(12),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+      marginBottom: verticalScale(6),
+    },
+    symbol: { fontSize: moderateScale(14), fontWeight: "700", color: palette.textPrimary },
+    date: { fontSize: moderateScale(12), color: palette.textMuted },
+    pnl: { marginLeft: "auto", fontSize: moderateScale(12), fontWeight: "700" },
+    pnlUp: { color: palette.successSoftText },
+    pnlDown: { color: palette.dangerSoftText },
+    pnlNeutral: { color: palette.textSecondary },
+    note: { fontSize: moderateScale(13), color: palette.textSecondary },
+    cardActions: {
+      flexDirection: "row",
+      gap: scale(8),
+      marginTop: verticalScale(8),
+    },
+    editButton: {
+      backgroundColor: palette.accentSoft,
+      borderWidth: 1,
+      borderColor: palette.accent,
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      borderRadius: 10,
+    },
+    editText: { color: palette.accentSoftText, fontSize: moderateScale(11), fontWeight: "700" },
+    deleteButton: {
+      backgroundColor: palette.dangerSoft,
+      borderWidth: 1,
+      borderColor: palette.danger,
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      borderRadius: 10,
+    },
+    deleteText: { color: palette.dangerSoftText, fontSize: moderateScale(11), fontWeight: "700" },
+    emptyState: {
+      textAlign: "center",
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+      marginTop: verticalScale(12),
+    },
+  });
+}

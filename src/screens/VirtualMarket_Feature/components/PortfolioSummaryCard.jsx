@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
 import { formatMoney, formatQuantity } from "../virtualMarketUtils";
+import { useAppTheme } from "../../../context/ThemeContext";
 
-function StatItem({ label, value, color = "#e2e8f0" }) {
+function StatItem({ label, value, color, styles }) {
   return (
     <View style={styles.statItem}>
       <Text style={styles.statLabel}>{label}</Text>
@@ -22,10 +23,12 @@ function formatSignedMoney(value) {
 }
 
 export default function PortfolioSummaryCard({ portfolio }) {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette, isLight), [palette, isLight]);
   const positions = Array.isArray(portfolio?.positions) ? portfolio.positions : [];
   const unrealized = Number(portfolio?.total_unrealized_pnl);
   const unrealizedPct = Number(portfolio?.total_unrealized_pnl_percent);
-  const pnlColor = unrealized < 0 ? "#fca5a5" : "#86efac";
+  const pnlColor = unrealized < 0 ? palette.dangerSoftText : palette.successSoftText;
 
   const pctText = Number.isFinite(unrealizedPct)
     ? `${unrealizedPct > 0 ? "+" : ""}${unrealizedPct.toFixed(2)}% overall`
@@ -42,12 +45,12 @@ export default function PortfolioSummaryCard({ portfolio }) {
         </View>
       </View>
       <View style={styles.statsRow}>
-        <StatItem label="Cash" value={formatMoney(portfolio?.cash_balance)} />
-        <StatItem label="Market Value" value={formatMoney(portfolio?.total_market_value)} />
+        <StatItem label="Cash" value={formatMoney(portfolio?.cash_balance)} color={palette.textPrimary} styles={styles} />
+        <StatItem label="Market Value" value={formatMoney(portfolio?.total_market_value)} color={palette.textPrimary} styles={styles} />
       </View>
       <View style={styles.statsRow}>
-        <StatItem label="Total Equity" value={formatMoney(portfolio?.total_equity)} />
-        <StatItem label="Unrealized P/L" value={formatMoney(unrealized)} color={pnlColor} />
+        <StatItem label="Total Equity" value={formatMoney(portfolio?.total_equity)} color={palette.textPrimary} styles={styles} />
+        <StatItem label="Unrealized P/L" value={formatMoney(unrealized)} color={pnlColor} styles={styles} />
       </View>
 
       <Text style={styles.positionsTitle}>Open Positions</Text>
@@ -60,7 +63,7 @@ export default function PortfolioSummaryCard({ portfolio }) {
                 {position.name}
               </Text>
               <Text style={styles.positionMeta}>
-                Avg {formatMoney(position.avg_cost)} • Last {formatMoney(position.current_price)}
+                Avg {formatMoney(position.avg_cost)} | Last {formatMoney(position.current_price)}
               </Text>
             </View>
             <View style={styles.positionRight}>
@@ -88,17 +91,18 @@ export default function PortfolioSummaryCard({ portfolio }) {
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette, isLight) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     marginBottom: verticalScale(12),
   },
   title: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(16),
     fontWeight: "800",
   },
@@ -116,21 +120,21 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(3),
   },
   headerBadgeText: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(10),
     fontWeight: "800",
   },
   badgePositive: {
-    borderColor: "#166534",
-    backgroundColor: "#052e16",
+    borderColor: palette.success,
+    backgroundColor: palette.successSoft,
   },
   badgeNegative: {
-    borderColor: "#991b1b",
-    backgroundColor: "#450a0a",
+    borderColor: palette.danger,
+    backgroundColor: palette.dangerSoft,
   },
   badgeNeutral: {
-    borderColor: "#334155",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.cardMuted,
   },
   statsRow: {
     flexDirection: "row",
@@ -139,24 +143,24 @@ const styles = StyleSheet.create({
   },
   statItem: {
     flex: 1,
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     borderRadius: 12,
     padding: scale(10),
   },
   statLabel: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(11),
     marginBottom: verticalScale(4),
   },
   statValue: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
   positionsTitle: {
-    color: "#93c5fd",
+    color: palette.accentSoftText,
     fontSize: moderateScale(12),
     fontWeight: "700",
     marginBottom: verticalScale(8),
@@ -166,10 +170,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     paddingVertical: verticalScale(8),
     paddingHorizontal: scale(10),
     marginBottom: verticalScale(8),
@@ -182,26 +186,26 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   positionSymbol: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
   positionName: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(11),
     marginTop: verticalScale(2),
   },
   positionMeta: {
-    color: "#64748b",
+    color: palette.textMuted,
     fontSize: moderateScale(10),
     marginTop: verticalScale(2),
   },
   positionQty: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(11),
   },
   positionValue: {
-    color: "#f8fafc",
+    color: palette.textPrimary,
     fontSize: moderateScale(12),
     fontWeight: "700",
     marginTop: verticalScale(2),
@@ -212,18 +216,19 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(2),
   },
   positive: {
-    color: "#86efac",
+    color: isLight ? palette.successSoftText : "#16a34a",
   },
   negative: {
-    color: "#fca5a5",
+    color: isLight ? palette.dangerSoftText : "#ef4444",
   },
   neutral: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
   },
   emptyText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     textAlign: "center",
     paddingVertical: verticalScale(8),
   },
-});
+  });
+}

@@ -1,5 +1,7 @@
+import React, { useMemo } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { TrendingUp, TrendingDown } from "lucide-react-native";
+import { useAppTheme } from "../context/ThemeContext";
 
 const defaultMovers = [
   { symbol: "DBS", name: "DBS Group Holdings", price: "$35.20", change: 2.4 },
@@ -11,6 +13,8 @@ const defaultMovers = [
 ];
 
 export default function MarketMoversCard({ movers = defaultMovers }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   return (
     <View style={styles.card}>
       <Text style={styles.header}>Top Market Movers</Text>
@@ -46,18 +50,19 @@ export default function MarketMoversCard({ movers = defaultMovers }) {
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: palette.card,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: palette.shadow,
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  header: { fontSize: 12, fontWeight: "500", color: "#64748b", marginBottom: 8 },
+  header: { fontSize: 12, fontWeight: "500", color: palette.textMuted, marginBottom: 8 },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -66,11 +71,12 @@ const styles = StyleSheet.create({
   rowItem: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    borderBottomColor: palette.cardBorder,
   },
   row: { flexDirection: "row", alignItems: "center" },
-  symbol: { fontSize: 14, fontWeight: "600", color: "#0f172a" },
-  name: { fontSize: 12, color: "#64748b" },
-  price: { fontSize: 14, fontWeight: "600", color: "#0f172a" },
+  symbol: { fontSize: 14, fontWeight: "600", color: palette.textPrimary },
+  name: { fontSize: 12, color: palette.textMuted },
+  price: { fontSize: 14, fontWeight: "600", color: palette.textPrimary },
   change: { fontSize: 12, fontWeight: "500", marginLeft: 4 },
-});
+  });
+}

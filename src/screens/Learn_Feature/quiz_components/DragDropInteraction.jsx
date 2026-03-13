@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
+import { useAppTheme } from "../../../context/ThemeContext";
 
 const DRAG_ACTIVATION_DISTANCE = 1;
 const DROP_HIT_SLOP = scale(18);
 
 export default function DragDropInteraction({ question, value, onChange, onDragStateChange }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const pairs = Array.isArray(question?.dragDrop?.pairs) ? question.dragDrop.pairs : [];
   const rightOptions = useMemo(
     () => [...new Set(pairs.map((pair) => String(pair.right ?? "")))].filter(Boolean),
@@ -294,9 +297,10 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   helperText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     marginBottom: verticalScale(6),
   },
@@ -307,9 +311,9 @@ const styles = StyleSheet.create({
     gap: verticalScale(8),
   },
   dropZone: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     borderRadius: 12,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(10),
@@ -335,20 +339,20 @@ const styles = StyleSheet.create({
     gap: scale(8),
   },
   dropZoneAnswer: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
     fontWeight: "700",
     flex: 1,
   },
   dropZoneAnswerPlaceholder: {
-    color: "#64748b",
+    color: palette.textMuted,
     fontWeight: "600",
   },
   clearBtn: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.input,
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(4),
   },
@@ -359,9 +363,9 @@ const styles = StyleSheet.create({
   },
   optionBank: {
     marginTop: verticalScale(2),
-    backgroundColor: "#0b1220",
+    backgroundColor: palette.backgroundAlt,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     borderRadius: 12,
     padding: scale(10),
     gap: verticalScale(8),
@@ -381,8 +385,8 @@ const styles = StyleSheet.create({
   optionChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.input,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(8),
     flexDirection: "row",
@@ -400,7 +404,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   optionChipText: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(12),
     fontWeight: "700",
   },
@@ -410,4 +414,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
   },
-});
+  });
+}

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -16,8 +16,11 @@ import {
   fetchConsultationMessages,
   sendConsultationMessage,
 } from "../api/consultation";
+import { useAppTheme } from "../context/ThemeContext";
 
 export default function ChatConsult({ route }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const bookingId = Number(route?.params?.bookingId);
   const expertName = route?.params?.expertName || "Advisor";
 
@@ -147,7 +150,7 @@ export default function ChatConsult({ route }) {
             <TextInput
               style={styles.input}
               placeholder="Type a message"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={palette.textMuted}
               value={input}
               onChangeText={setInput}
               editable={!sending}
@@ -170,123 +173,125 @@ export default function ChatConsult({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(12),
-    borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-    backgroundColor: "#0f172a",
-  },
-  identity: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-  },
-  name: { fontSize: moderateScale(15), fontWeight: "800", color: "#f8fafc" },
-  status: { fontSize: moderateScale(11), color: "#86efac" },
-  refreshButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(5),
-    borderWidth: 1,
-    borderColor: "#1d4ed8",
-    backgroundColor: "#172554",
-    borderRadius: scale(999),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(4),
-  },
-  refreshText: {
-    color: "#bfdbfe",
-    fontSize: moderateScale(11),
-    fontWeight: "700",
-  },
-  loadingWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: scale(8),
-  },
-  loadingText: {
-    color: "#94a3b8",
-    fontSize: moderateScale(12),
-  },
-  error: {
-    marginHorizontal: scale(14),
-    marginTop: verticalScale(8),
-    color: "#fca5a5",
-    fontSize: moderateScale(12),
-  },
-  messages: {
-    flex: 1,
-  },
-  bubble: {
-    maxWidth: "82%",
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(8),
-    borderRadius: scale(12),
-    borderWidth: 1,
-  },
-  bubbleAdvisor: {
-    alignSelf: "flex-start",
-    backgroundColor: "#0f172a",
-    borderColor: "#334155",
-  },
-  bubbleUser: {
-    alignSelf: "flex-end",
-    backgroundColor: "#1e3a8a",
-    borderColor: "#3b82f6",
-  },
-  bubbleSystem: {
-    alignSelf: "center",
-    backgroundColor: "#052e16",
-    borderColor: "#166534",
-  },
-  bubbleText: { fontSize: moderateScale(12) },
-  bubbleTextAdvisor: { color: "#e2e8f0" },
-  bubbleTextUser: { color: "#dbeafe" },
-  bubbleTextSystem: { color: "#86efac", fontWeight: "700" },
-  emptyText: {
-    textAlign: "center",
-    color: "#64748b",
-    fontSize: moderateScale(12),
-    marginTop: verticalScale(12),
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-    padding: scale(12),
-    borderTopWidth: 1,
-    borderTopColor: "#1e293b",
-    backgroundColor: "#0f172a",
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
-    borderRadius: scale(999),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
-    color: "#f8fafc",
-    fontSize: moderateScale(12),
-  },
-  sendButton: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: scale(20),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1d4ed8",
-    borderWidth: 1,
-    borderColor: "#2563eb",
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: scale(14),
+      paddingVertical: verticalScale(12),
+      borderBottomWidth: 1,
+      borderBottomColor: palette.cardBorder,
+      backgroundColor: palette.card,
+    },
+    identity: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+    },
+    name: { fontSize: moderateScale(15), fontWeight: "800", color: palette.textPrimary },
+    status: { fontSize: moderateScale(11), color: "#86efac" },
+    refreshButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(5),
+      borderWidth: 1,
+      borderColor: palette.accent,
+      backgroundColor: palette.accentSoft,
+      borderRadius: scale(999),
+      paddingHorizontal: scale(8),
+      paddingVertical: verticalScale(4),
+    },
+    refreshText: {
+      color: palette.accentText,
+      fontSize: moderateScale(11),
+      fontWeight: "700",
+    },
+    loadingWrap: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: scale(8),
+    },
+    loadingText: {
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+    },
+    error: {
+      marginHorizontal: scale(14),
+      marginTop: verticalScale(8),
+      color: palette.danger,
+      fontSize: moderateScale(12),
+    },
+    messages: {
+      flex: 1,
+    },
+    bubble: {
+      maxWidth: "82%",
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(8),
+      borderRadius: scale(12),
+      borderWidth: 1,
+    },
+    bubbleAdvisor: {
+      alignSelf: "flex-start",
+      backgroundColor: palette.card,
+      borderColor: palette.inputBorder,
+    },
+    bubbleUser: {
+      alignSelf: "flex-end",
+      backgroundColor: palette.accentSoft,
+      borderColor: "#3b82f6",
+    },
+    bubbleSystem: {
+      alignSelf: "center",
+      backgroundColor: "#052e16",
+      borderColor: "#166534",
+    },
+    bubbleText: { fontSize: moderateScale(12) },
+    bubbleTextAdvisor: { color: palette.textPrimary },
+    bubbleTextUser: { color: palette.accentText },
+    bubbleTextSystem: { color: "#86efac", fontWeight: "700" },
+    emptyText: {
+      textAlign: "center",
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+      marginTop: verticalScale(12),
+    },
+    inputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+      padding: scale(12),
+      borderTopWidth: 1,
+      borderTopColor: palette.cardBorder,
+      backgroundColor: palette.card,
+    },
+    input: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      backgroundColor: palette.input,
+      borderRadius: scale(999),
+      paddingHorizontal: scale(12),
+      paddingVertical: verticalScale(8),
+      color: palette.textPrimary,
+      fontSize: moderateScale(12),
+    },
+    sendButton: {
+      width: scale(40),
+      height: scale(40),
+      borderRadius: scale(20),
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: palette.accent,
+      borderWidth: 1,
+      borderColor: palette.accent,
+    },
+    sendButtonDisabled: {
+      opacity: 0.5,
+    },
+  });
+}

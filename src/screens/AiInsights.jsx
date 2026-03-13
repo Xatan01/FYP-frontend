@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -15,6 +15,7 @@ import {
 } from "../styles/responsive";
 import LottieView from "lottie-react-native";
 import { MessageCircle } from "lucide-react-native";
+import { useAppTheme } from "../context/ThemeContext";
 
 // Free Lottie animation for the robot
 const LOTTIE_ROBOT =
@@ -27,6 +28,8 @@ const predictions = [
 ];
 
 export default function AiInsights() {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("Just now");
 
@@ -99,80 +102,84 @@ export default function AiInsights() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  container: { flex: 1 },
-  headerRow: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  header: {
-    fontSize: moderateScale(22),
-    fontWeight: "bold",
-    color: "#0f172a",
-    marginBottom: verticalScale(4),
-  },
-  refreshButton: {
-    backgroundColor: "#f3e8ff",
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    borderRadius: 999,
-  },
-  refreshText: { color: "#6b21a8", fontSize: moderateScale(12), fontWeight: "600" },
-  updatedText: {
-    alignSelf: "flex-start",
-    fontSize: moderateScale(11),
-    color: "#64748b",
-    marginBottom: verticalScale(10),
-  },
-  lottie: {
-    width: scale(180),
-    height: scale(180),
-  },
-  introText: {
-    fontSize: moderateScale(14),
-    color: "#475569",
-    textAlign: "center",
-    marginBottom: verticalScale(16),
-    paddingHorizontal: scale(16),
-  },
-  card: {
-    backgroundColor: "#f8fafc",
-    borderRadius: scale(16),
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    padding: scale(16),
-    marginBottom: verticalScale(10),
-    width: "100%",
-  },
-  asset: { fontSize: moderateScale(14), fontWeight: "600", color: "#0f172a" },
-  signal: {
-    fontSize: moderateScale(13),
-    fontWeight: "500",
-    marginTop: verticalScale(4),
-  },
-  loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
-  loadingText: { color: "#6b21a8", fontSize: moderateScale(12) },
-  chatButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#a855f7",
-    borderRadius: 25,
-    paddingVertical: scale(12),
-    paddingHorizontal: scale(20),
-    marginTop: verticalScale(12),
-    shadowColor: "#a855f7",
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  chatButtonText: {
-    color: "#fff",
-    fontSize: moderateScale(14),
-    fontWeight: "600",
-    marginLeft: scale(8),
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    headerRow: {
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    header: {
+      fontSize: moderateScale(22),
+      fontWeight: "bold",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(4),
+    },
+    refreshButton: {
+      backgroundColor: palette.purpleSoft,
+      paddingHorizontal: scale(12),
+      paddingVertical: verticalScale(6),
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: palette.purpleBorder,
+    },
+    refreshText: { color: palette.purpleText, fontSize: moderateScale(12), fontWeight: "600" },
+    updatedText: {
+      alignSelf: "flex-start",
+      fontSize: moderateScale(11),
+      color: palette.textMuted,
+      marginBottom: verticalScale(10),
+    },
+    lottie: {
+      width: scale(180),
+      height: scale(180),
+    },
+    introText: {
+      fontSize: moderateScale(14),
+      color: palette.textSecondary,
+      textAlign: "center",
+      marginBottom: verticalScale(16),
+      paddingHorizontal: scale(16),
+    },
+    card: {
+      backgroundColor: palette.cardSoft,
+      borderRadius: scale(16),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      padding: scale(16),
+      marginBottom: verticalScale(10),
+      width: "100%",
+    },
+    asset: { fontSize: moderateScale(14), fontWeight: "600", color: palette.textPrimary },
+    signal: {
+      fontSize: moderateScale(13),
+      fontWeight: "500",
+      marginTop: verticalScale(4),
+    },
+    loading: { alignItems: "center", gap: verticalScale(6), marginVertical: 12 },
+    loadingText: { color: palette.purpleText, fontSize: moderateScale(12) },
+    chatButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#a855f7",
+      borderRadius: 25,
+      paddingVertical: scale(12),
+      paddingHorizontal: scale(20),
+      marginTop: verticalScale(12),
+      shadowColor: "#a855f7",
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    chatButtonText: {
+      color: palette.white,
+      fontSize: moderateScale(14),
+      fontWeight: "600",
+      marginLeft: scale(8),
+    },
+  });
+}

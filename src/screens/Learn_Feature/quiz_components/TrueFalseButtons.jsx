@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
+import { useAppTheme } from "../../../context/ThemeContext";
 
 export default function TrueFalseButtons({ value, onSelect }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const selectedTrue = value === true;
   const selectedFalse = value === false;
 
@@ -29,11 +32,12 @@ export default function TrueFalseButtons({ value, onSelect }) {
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   tfWrap: {
-    backgroundColor: "#0b1220",
+    backgroundColor: palette.backgroundAlt,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     borderRadius: 14,
     padding: scale(6),
     flexDirection: "row",
@@ -44,8 +48,8 @@ const styles = StyleSheet.create({
     minHeight: verticalScale(44),
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.input,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -72,11 +76,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fca5a5",
   },
   choiceText: {
-    color: "#cbd5e1",
+    color: palette.textSecondary,
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
   choiceTextSelected: {
-    color: "#f8fafc",
+    color: palette.textPrimary,
   },
-});
+  });
+}

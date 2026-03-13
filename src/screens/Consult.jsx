@@ -17,6 +17,7 @@ import {
   fetchConsultationBookings,
   fetchConsultationExperts,
 } from "../api/consultation";
+import { useAppTheme } from "../context/ThemeContext";
 
 function toMoney(amount, currency = "USD") {
   const numeric = Number(amount);
@@ -31,6 +32,8 @@ function initialsFromName(name = "") {
 }
 
 export default function Consult({ navigation }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const [experts, setExperts] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -143,7 +146,9 @@ export default function Consult({ navigation }) {
                     <Image source={{ uri: expert.avatar_url }} style={styles.avatar} />
                   ) : (
                     <View style={styles.avatarFallback}>
-                      <Text style={styles.avatarFallbackText}>{initialsFromName(expert.display_name)}</Text>
+                      <Text style={styles.avatarFallbackText}>
+                        {initialsFromName(expert.display_name)}
+                      </Text>
                     </View>
                   )}
 
@@ -168,7 +173,7 @@ export default function Consult({ navigation }) {
                     onPress={() => handleOpenChat(expert)}
                     disabled={busy}
                   >
-                    <MessageCircle size={15} color="#bfdbfe" />
+                    <MessageCircle size={15} color={palette.accentSoftText} />
                     <Text style={styles.chatText}>{busy ? "Opening..." : "Chat"}</Text>
                   </TouchableOpacity>
 
@@ -177,7 +182,7 @@ export default function Consult({ navigation }) {
                     onPress={() => handleOpenBooking(expert)}
                     disabled={busy}
                   >
-                    <CalendarCheck2 size={15} color="#dcfce7" />
+                    <CalendarCheck2 size={15} color={palette.successSoftText} />
                     <Text style={styles.bookText}>{booked ? "Booked" : "Book"}</Text>
                   </TouchableOpacity>
                 </View>
@@ -198,175 +203,177 @@ export default function Consult({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
-  container: { flex: 1 },
-  loadingWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: scale(8),
-  },
-  loadingText: {
-    color: "#94a3b8",
-    fontSize: moderateScale(12),
-  },
-  header: {
-    fontSize: moderateScale(24),
-    fontWeight: "900",
-    color: "#f8fafc",
-  },
-  subheader: {
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(14),
-    color: "#94a3b8",
-    fontSize: moderateScale(12),
-  },
-  error: {
-    color: "#fca5a5",
-    marginBottom: verticalScale(10),
-    fontSize: moderateScale(12),
-  },
-  card: {
-    backgroundColor: "#0f172a",
-    borderColor: "#1e293b",
-    borderWidth: 1,
-    borderRadius: scale(16),
-    padding: scale(14),
-    marginBottom: verticalScale(12),
-  },
-  topRow: {
-    flexDirection: "row",
-    gap: scale(10),
-  },
-  avatar: {
-    width: scale(54),
-    height: scale(54),
-    borderRadius: scale(27),
-  },
-  avatarFallback: {
-    width: scale(54),
-    height: scale(54),
-    borderRadius: scale(27),
-    backgroundColor: "#1e3a8a",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#1d4ed8",
-  },
-  avatarFallbackText: {
-    color: "#bfdbfe",
-    fontSize: moderateScale(14),
-    fontWeight: "800",
-  },
-  profileCopy: {
-    flex: 1,
-  },
-  name: {
-    color: "#f8fafc",
-    fontSize: moderateScale(15),
-    fontWeight: "800",
-  },
-  designation: {
-    color: "#cbd5e1",
-    fontSize: moderateScale(12),
-    marginTop: verticalScale(2),
-  },
-  specialty: {
-    color: "#93c5fd",
-    fontSize: moderateScale(12),
-    marginTop: verticalScale(2),
-    fontWeight: "600",
-  },
-  metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: scale(8),
-    marginTop: verticalScale(6),
-  },
-  ratingPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(4),
-    backgroundColor: "#1f2937",
-    borderColor: "#374151",
-    borderWidth: 1,
-    borderRadius: scale(999),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(3),
-  },
-  ratingText: {
-    color: "#fef9c3",
-    fontSize: moderateScale(11),
-    fontWeight: "700",
-  },
-  metaText: {
-    color: "#94a3b8",
-    fontSize: moderateScale(11),
-  },
-  actionRow: {
-    flexDirection: "row",
-    gap: scale(8),
-    marginTop: verticalScale(10),
-  },
-  chatButton: {
-    flex: 1,
-    backgroundColor: "#1e3a8a",
-    borderColor: "#2563eb",
-    borderWidth: 1,
-    borderRadius: scale(10),
-    paddingVertical: verticalScale(8),
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: scale(6),
-  },
-  chatText: {
-    color: "#dbeafe",
-    fontWeight: "700",
-    fontSize: moderateScale(12),
-  },
-  bookButton: {
-    flex: 1,
-    backgroundColor: "#14532d",
-    borderColor: "#16a34a",
-    borderWidth: 1,
-    borderRadius: scale(10),
-    paddingVertical: verticalScale(8),
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: scale(6),
-  },
-  bookText: {
-    color: "#dcfce7",
-    fontWeight: "700",
-    fontSize: moderateScale(12),
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  badgeRow: {
-    marginTop: verticalScale(8),
-    alignItems: "flex-start",
-  },
-  statusBadge: {
-    fontSize: moderateScale(11),
-    fontWeight: "700",
-    borderRadius: scale(999),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(3),
-    overflow: "hidden",
-  },
-  bookedBadge: {
-    color: "#86efac",
-    backgroundColor: "#052e16",
-  },
-  empty: {
-    marginTop: verticalScale(10),
-    textAlign: "center",
-    color: "#64748b",
-    fontSize: moderateScale(12),
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    loadingWrap: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: scale(8),
+    },
+    loadingText: {
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+    },
+    header: {
+      fontSize: moderateScale(24),
+      fontWeight: "900",
+      color: palette.textPrimary,
+    },
+    subheader: {
+      marginTop: verticalScale(4),
+      marginBottom: verticalScale(14),
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+    },
+    error: {
+      color: palette.danger,
+      marginBottom: verticalScale(10),
+      fontSize: moderateScale(12),
+    },
+    card: {
+      backgroundColor: palette.card,
+      borderColor: palette.cardBorder,
+      borderWidth: 1,
+      borderRadius: scale(16),
+      padding: scale(14),
+      marginBottom: verticalScale(12),
+    },
+    topRow: {
+      flexDirection: "row",
+      gap: scale(10),
+    },
+    avatar: {
+      width: scale(54),
+      height: scale(54),
+      borderRadius: scale(27),
+    },
+    avatarFallback: {
+      width: scale(54),
+      height: scale(54),
+      borderRadius: scale(27),
+      backgroundColor: palette.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: palette.accent,
+    },
+    avatarFallbackText: {
+      color: palette.accentSoftText,
+      fontSize: moderateScale(14),
+      fontWeight: "800",
+    },
+    profileCopy: {
+      flex: 1,
+    },
+    name: {
+      color: palette.textPrimary,
+      fontSize: moderateScale(15),
+      fontWeight: "800",
+    },
+    designation: {
+      color: palette.textSecondary,
+      fontSize: moderateScale(12),
+      marginTop: verticalScale(2),
+    },
+    specialty: {
+      color: palette.tabActive,
+      fontSize: moderateScale(12),
+      marginTop: verticalScale(2),
+      fontWeight: "600",
+    },
+    metaRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      gap: scale(8),
+      marginTop: verticalScale(6),
+    },
+    ratingPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(4),
+      backgroundColor: palette.cardSoft,
+      borderColor: palette.inputBorder,
+      borderWidth: 1,
+      borderRadius: scale(999),
+      paddingHorizontal: scale(8),
+      paddingVertical: verticalScale(3),
+    },
+    ratingText: {
+      color: palette.warningSoftText,
+      fontSize: moderateScale(11),
+      fontWeight: "700",
+    },
+    metaText: {
+      color: palette.textMuted,
+      fontSize: moderateScale(11),
+    },
+    actionRow: {
+      flexDirection: "row",
+      gap: scale(8),
+      marginTop: verticalScale(10),
+    },
+    chatButton: {
+      flex: 1,
+      backgroundColor: palette.accentSoft,
+      borderColor: palette.accent,
+      borderWidth: 1,
+      borderRadius: scale(10),
+      paddingVertical: verticalScale(8),
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: scale(6),
+    },
+    chatText: {
+      color: palette.accentSoftText,
+      fontWeight: "700",
+      fontSize: moderateScale(12),
+    },
+    bookButton: {
+      flex: 1,
+      backgroundColor: palette.successSoft,
+      borderColor: palette.success,
+      borderWidth: 1,
+      borderRadius: scale(10),
+      paddingVertical: verticalScale(8),
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: scale(6),
+    },
+    bookText: {
+      color: palette.successSoftText,
+      fontWeight: "700",
+      fontSize: moderateScale(12),
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    badgeRow: {
+      marginTop: verticalScale(8),
+      alignItems: "flex-start",
+    },
+    statusBadge: {
+      fontSize: moderateScale(11),
+      fontWeight: "700",
+      borderRadius: scale(999),
+      paddingHorizontal: scale(8),
+      paddingVertical: verticalScale(3),
+      overflow: "hidden",
+    },
+    bookedBadge: {
+      color: palette.successSoftText,
+      backgroundColor: palette.successSoft,
+    },
+    empty: {
+      marginTop: verticalScale(10),
+      textAlign: "center",
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+    },
+  });
+}

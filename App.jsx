@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { StatusBar } from "expo-status-bar";
 import { enableScreens } from "react-native-screens";
@@ -8,8 +8,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import LessonCompleteModal from "./src/components/LessonCompleteModal";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import { ThemeProvider } from "./src/context/ThemeContext";
 import { apiFetch } from "./src/api/client";
 import { fetchProfileSettings } from "./src/api/profile";
+import { buildNavigationTheme } from "./src/theme/appTheme";
 
 enableScreens();
 
@@ -61,28 +63,7 @@ function AppInner() {
     })();
   }, [session, authLoading]);
 
-  const navigationTheme =
-    themePreference === "light"
-      ? {
-          ...DefaultTheme,
-          colors: {
-            ...DefaultTheme.colors,
-            background: "#f8fafc",
-            card: "#ffffff",
-            text: "#0f172a",
-            border: "#e2e8f0",
-          },
-        }
-      : {
-          ...DarkTheme,
-          colors: {
-            ...DarkTheme.colors,
-            background: "#020617",
-            card: "#0f172a",
-            text: "#e2e8f0",
-            border: "#1e293b",
-          },
-        };
+  const navigationTheme = buildNavigationTheme(themePreference);
 
   if (authLoading || loading) {
     return (
@@ -96,17 +77,22 @@ function AppInner() {
   }
 
   return (
-    <NavigationContainer theme={navigationTheme}>
-      <StatusBar style={themePreference === "light" ? "dark" : "light"} />
-      <RootNavigator
-        userData={userData}
-        learningPath={learningPath}
-        onCompleteLesson={async () => {}}
-        themePreference={themePreference}
-        onThemePreferenceChange={setThemePreference}
-      />
-      <LessonCompleteModal visible={false} onClose={() => {}} xp={0} />
-    </NavigationContainer>
+    <ThemeProvider
+      themePreference={themePreference}
+      setThemePreference={setThemePreference}
+    >
+      <NavigationContainer theme={navigationTheme}>
+        <StatusBar style={themePreference === "light" ? "dark" : "light"} />
+        <RootNavigator
+          userData={userData}
+          learningPath={learningPath}
+          onCompleteLesson={async () => {}}
+          themePreference={themePreference}
+          onThemePreferenceChange={setThemePreference}
+        />
+        <LessonCompleteModal visible={false} onClose={() => {}} xp={0} />
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
 

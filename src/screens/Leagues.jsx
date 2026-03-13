@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -14,6 +14,7 @@ import {
 } from "../styles/responsive";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
+import { useAppTheme } from "../context/ThemeContext";
 
 // Free Lottie animation for the trophy
 const LOTTIE_TROPHY = "https://lottie.host/80a37368-e374-4861-8318-39b1103c3f6c/3O2f2rA7Yv.json";
@@ -28,6 +29,8 @@ const leaderboard = [
 ];
 
 export default function Leagues() {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const myUser = leaderboard.find((u) => u.name.includes("You"));
 
   return (
@@ -41,7 +44,7 @@ export default function Leagues() {
 
         {/* League Card */}
         <LinearGradient
-          colors={["#f59e0b", "#b45309"]}
+          colors={isLight ? ["#f59e0b", "#b45309"] : ["#f59e0b", "#78350f"]}
           style={styles.leagueCard}
         >
           <LottieView
@@ -85,80 +88,84 @@ export default function Leagues() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { flex: 1 },
-  header: {
-    fontSize: moderateScale(22),
-    fontWeight: "bold",
-    color: "#0f172a",
-    marginBottom: verticalScale(12),
-  },
-  leagueCard: {
-    borderRadius: 16,
-    padding: scale(16),
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: verticalScale(20),
-    overflow: "hidden",
-  },
-  lottie: {
-    width: scale(70),
-    height: scale(70),
-    marginRight: scale(8),
-  },
-  leagueName: {
-    fontSize: moderateScale(20),
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  leagueSubtitle: {
-    fontSize: moderateScale(13),
-    color: "#fef3c7",
-  },
-  leaderboardHeader: {
-    fontSize: moderateScale(18),
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: verticalScale(8),
-  },
-  leaderboard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: scale(8),
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: scale(8),
-    borderRadius: 12,
-  },
-  myRow: {
-    backgroundColor: "#e0f2fe",
-    borderWidth: 1,
-    borderColor: "#3b82f6",
-  },
-  rank: {
-    fontSize: moderateScale(14),
-    fontWeight: "600",
-    color: "#64748b",
-    width: scale(30),
-  },
-  avatar: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: scale(20),
-    marginRight: scale(12),
-  },
-  name: {
-    flex: 1,
-    fontSize: moderateScale(14),
-    fontWeight: "500",
-    color: "#0f172a",
-  },
-  xp: {
-    fontSize: moderateScale(14),
-    fontWeight: "600",
-    color: "#0f172a",
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    header: {
+      fontSize: moderateScale(22),
+      fontWeight: "bold",
+      color: palette.textPrimary,
+      marginBottom: verticalScale(12),
+    },
+    leagueCard: {
+      borderRadius: 16,
+      padding: scale(16),
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: verticalScale(20),
+      overflow: "hidden",
+    },
+    lottie: {
+      width: scale(70),
+      height: scale(70),
+      marginRight: scale(8),
+    },
+    leagueName: {
+      fontSize: moderateScale(20),
+      fontWeight: "bold",
+      color: palette.white,
+    },
+    leagueSubtitle: {
+      fontSize: moderateScale(13),
+      color: "#fef3c7",
+    },
+    leaderboardHeader: {
+      fontSize: moderateScale(18),
+      fontWeight: "600",
+      color: palette.textSecondary,
+      marginBottom: verticalScale(8),
+    },
+    leaderboard: {
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: scale(8),
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: scale(8),
+      borderRadius: 12,
+    },
+    myRow: {
+      backgroundColor: palette.accentSoft,
+      borderWidth: 1,
+      borderColor: "#3b82f6",
+    },
+    rank: {
+      fontSize: moderateScale(14),
+      fontWeight: "600",
+      color: palette.textMuted,
+      width: scale(30),
+    },
+    avatar: {
+      width: scale(40),
+      height: scale(40),
+      borderRadius: scale(20),
+      marginRight: scale(12),
+    },
+    name: {
+      flex: 1,
+      fontSize: moderateScale(14),
+      fontWeight: "500",
+      color: palette.textPrimary,
+    },
+    xp: {
+      fontSize: moderateScale(14),
+      fontWeight: "600",
+      color: palette.textPrimary,
+    },
+  });
+}

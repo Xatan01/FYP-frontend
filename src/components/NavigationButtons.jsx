@@ -1,6 +1,8 @@
+import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { BookOpen, MessageCircle, Sparkles, Eye } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAppTheme } from "../context/ThemeContext";
 
 const buttons = [
   { icon: BookOpen, label: "Learn", colors: ["#3b82f6", "#1d4ed8"] },
@@ -10,6 +12,8 @@ const buttons = [
 ];
 
 export default function NavigationButtons() {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   return (
     <View style={styles.container}>
       {buttons.map((b) => (
@@ -24,7 +28,8 @@ export default function NavigationButtons() {
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   container: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -33,12 +38,12 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "48%",
-    backgroundColor: "#fff",
+    backgroundColor: palette.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: palette.shadow,
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
@@ -52,5 +57,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 8,
   },
-  label: { fontSize: 14, fontWeight: "600", color: "#0f172a" },
-});
+  label: { fontSize: 14, fontWeight: "600", color: palette.textPrimary },
+  });
+}

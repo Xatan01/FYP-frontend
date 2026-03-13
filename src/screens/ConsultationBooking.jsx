@@ -15,6 +15,7 @@ import {
   createConsultationBooking,
   markConsultationBooked,
 } from "../api/consultation";
+import { useAppTheme } from "../context/ThemeContext";
 
 const SLOT_OPTIONS = ["09:30", "11:00", "14:00", "15:30", "17:00"];
 
@@ -40,6 +41,8 @@ function combineDateAndSlot(dateObj, slot) {
 }
 
 export default function ConsultationBooking({ navigation, route }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const expert = route?.params?.expert || null;
   const existingBooking = route?.params?.booking || null;
 
@@ -177,7 +180,7 @@ export default function ConsultationBooking({ navigation, route }) {
           <TextInput
             style={styles.input}
             placeholder="What do you want help with?"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={palette.textMuted}
             value={topic}
             onChangeText={setTopic}
             editable={!saving}
@@ -187,7 +190,7 @@ export default function ConsultationBooking({ navigation, route }) {
           <TextInput
             style={[styles.input, styles.messageInput]}
             placeholder="Optional: send a first message to the expert"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={palette.textMuted}
             value={initialMessage}
             onChangeText={setInitialMessage}
             editable={!saving && !existingBooking?.booking_id}
@@ -223,118 +226,120 @@ export default function ConsultationBooking({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#020617" },
-  container: { flex: 1 },
-  header: {
-    fontSize: moderateScale(24),
-    fontWeight: "900",
-    color: "#f8fafc",
-  },
-  subtitle: {
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(10),
-    color: "#94a3b8",
-    fontSize: moderateScale(12),
-  },
-  expertPill: {
-    alignSelf: "flex-start",
-    backgroundColor: "#172554",
-    borderColor: "#1d4ed8",
-    borderWidth: 1,
-    borderRadius: scale(999),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    marginBottom: verticalScale(12),
-  },
-  expertPillText: {
-    color: "#bfdbfe",
-    fontSize: moderateScale(11),
-    fontWeight: "700",
-  },
-  error: {
-    color: "#fca5a5",
-    marginBottom: verticalScale(10),
-    fontSize: moderateScale(12),
-  },
-  sectionCard: {
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    borderRadius: scale(14),
-    padding: scale(12),
-    marginBottom: verticalScale(12),
-  },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: scale(8) },
-  sectionTitle: {
-    color: "#e2e8f0",
-    fontSize: moderateScale(13),
-    fontWeight: "700",
-  },
-  pillRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: scale(8),
-    marginTop: verticalScale(10),
-  },
-  pill: {
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    borderRadius: scale(999),
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
-  },
-  pillActive: {
-    backgroundColor: "#1d4ed8",
-    borderColor: "#3b82f6",
-  },
-  pillText: { color: "#94a3b8", fontSize: moderateScale(12), fontWeight: "700" },
-  pillTextActive: { color: "#dbeafe" },
-  input: {
-    marginTop: verticalScale(8),
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#334155",
-    color: "#f8fafc",
-    borderRadius: scale(10),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(8),
-    fontSize: moderateScale(12),
-  },
-  messageInput: {
-    minHeight: verticalScale(68),
-    textAlignVertical: "top",
-  },
-  hint: {
-    marginTop: verticalScale(6),
-    color: "#64748b",
-    fontSize: moderateScale(11),
-  },
-  confirmButton: {
-    backgroundColor: "#166534",
-    borderColor: "#16a34a",
-    borderWidth: 1,
-    borderRadius: scale(12),
-    paddingVertical: verticalScale(12),
-    alignItems: "center",
-  },
-  confirmButtonDisabled: {
-    opacity: 0.7,
-  },
-  confirmText: {
-    color: "#dcfce7",
-    fontWeight: "800",
-    fontSize: moderateScale(13),
-  },
-  confirmedRow: {
-    marginTop: verticalScale(10),
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-  },
-  confirmedText: {
-    color: "#86efac",
-    fontSize: moderateScale(12),
-  },
-});
+function buildStyles(palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: palette.background },
+    container: { flex: 1 },
+    header: {
+      fontSize: moderateScale(24),
+      fontWeight: "900",
+      color: palette.textPrimary,
+    },
+    subtitle: {
+      marginTop: verticalScale(4),
+      marginBottom: verticalScale(10),
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+    },
+    expertPill: {
+      alignSelf: "flex-start",
+      backgroundColor: palette.accentSoft,
+      borderColor: palette.accent,
+      borderWidth: 1,
+      borderRadius: scale(999),
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(4),
+      marginBottom: verticalScale(12),
+    },
+    expertPillText: {
+      color: palette.accentText,
+      fontSize: moderateScale(11),
+      fontWeight: "700",
+    },
+    error: {
+      color: palette.danger,
+      marginBottom: verticalScale(10),
+      fontSize: moderateScale(12),
+    },
+    sectionCard: {
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      borderRadius: scale(14),
+      padding: scale(12),
+      marginBottom: verticalScale(12),
+    },
+    sectionHeader: { flexDirection: "row", alignItems: "center", gap: scale(8) },
+    sectionTitle: {
+      color: palette.textPrimary,
+      fontSize: moderateScale(13),
+      fontWeight: "700",
+    },
+    pillRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: scale(8),
+      marginTop: verticalScale(10),
+    },
+    pill: {
+      paddingHorizontal: scale(12),
+      paddingVertical: verticalScale(6),
+      borderRadius: scale(999),
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      backgroundColor: palette.input,
+    },
+    pillActive: {
+      backgroundColor: palette.accent,
+      borderColor: "#3b82f6",
+    },
+    pillText: { color: palette.textMuted, fontSize: moderateScale(12), fontWeight: "700" },
+    pillTextActive: { color: palette.accentText },
+    input: {
+      marginTop: verticalScale(8),
+      backgroundColor: palette.input,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      color: palette.textPrimary,
+      borderRadius: scale(10),
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(8),
+      fontSize: moderateScale(12),
+    },
+    messageInput: {
+      minHeight: verticalScale(68),
+      textAlignVertical: "top",
+    },
+    hint: {
+      marginTop: verticalScale(6),
+      color: palette.textMuted,
+      fontSize: moderateScale(11),
+    },
+    confirmButton: {
+      backgroundColor: palette.successSoft,
+      borderColor: palette.success,
+      borderWidth: 1,
+      borderRadius: scale(12),
+      paddingVertical: verticalScale(12),
+      alignItems: "center",
+    },
+    confirmButtonDisabled: {
+      opacity: 0.7,
+    },
+    confirmText: {
+      color: "#dcfce7",
+      fontWeight: "800",
+      fontSize: moderateScale(13),
+    },
+    confirmedRow: {
+      marginTop: verticalScale(10),
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+    },
+    confirmedText: {
+      color: "#86efac",
+      fontSize: moderateScale(12),
+    },
+  });
+}

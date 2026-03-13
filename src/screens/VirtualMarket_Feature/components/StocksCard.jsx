@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
 import { formatDate, formatMoney } from "../virtualMarketUtils";
+import { useAppTheme } from "../../../context/ThemeContext";
 
 export default function StocksCard({ stocks }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   const items = Array.isArray(stocks) ? stocks : [];
 
   return (
@@ -43,17 +46,18 @@ export default function StocksCard({ stocks }) {
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: palette.cardBorder,
     padding: scale(14),
     marginBottom: verticalScale(12),
   },
   title: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(16),
     fontWeight: "800",
     marginBottom: verticalScale(10),
@@ -63,7 +67,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#1f2937",
+    borderBottomColor: palette.cardBorder,
     paddingVertical: verticalScale(10),
     gap: scale(10),
   },
@@ -77,7 +81,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(2),
   },
   symbol: {
-    color: "#f8fafc",
+    color: palette.textPrimary,
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
@@ -88,39 +92,40 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(2),
   },
   badgeUnlocked: {
-    borderColor: "#15803d",
-    backgroundColor: "#052e16",
+    borderColor: palette.success,
+    backgroundColor: palette.successSoft,
   },
   badgeLocked: {
-    borderColor: "#6b7280",
-    backgroundColor: "#111827",
+    borderColor: palette.inputBorder,
+    backgroundColor: palette.input,
   },
   badgeText: {
-    color: "#cbd5e1",
+    color: palette.textPrimary,
     fontSize: moderateScale(10),
     fontWeight: "700",
   },
   name: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(11),
   },
   right: {
     alignItems: "flex-end",
   },
   price: {
-    color: "#e2e8f0",
+    color: palette.textPrimary,
     fontSize: moderateScale(12),
     fontWeight: "700",
   },
   date: {
-    color: "#64748b",
+    color: palette.textMuted,
     fontSize: moderateScale(10),
     marginTop: verticalScale(2),
   },
   emptyText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     textAlign: "center",
     paddingVertical: verticalScale(8),
   },
-});
+  });
+}

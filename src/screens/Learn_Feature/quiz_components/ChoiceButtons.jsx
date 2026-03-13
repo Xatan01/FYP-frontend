@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
+import { useAppTheme } from "../../../context/ThemeContext";
 
 export default function ChoiceButtons({ options, value, onSelect }) {
+  const { palette } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette), [palette]);
   if (!Array.isArray(options) || options.length === 0) {
     return <Text style={styles.helperText}>No options available.</Text>;
   }
@@ -33,9 +36,10 @@ export default function ChoiceButtons({ options, value, onSelect }) {
   );
 }
 
-const styles = StyleSheet.create({
+function buildStyles(palette) {
+  return StyleSheet.create({
   helperText: {
-    color: "#94a3b8",
+    color: palette.textMuted,
     fontSize: moderateScale(12),
     marginBottom: verticalScale(6),
   },
@@ -43,9 +47,9 @@ const styles = StyleSheet.create({
     gap: verticalScale(8),
   },
   choiceBtn: {
-    backgroundColor: "#111827",
+    backgroundColor: palette.input,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: palette.cardBorder,
     borderRadius: 12,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(10),
@@ -62,9 +66,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(4),
     borderRadius: 999,
-    backgroundColor: "#0f172a",
+    backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: palette.inputBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -78,7 +82,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   choiceText: {
-    color: "#d1d5db",
+    color: palette.textSecondary,
     fontSize: moderateScale(12),
     lineHeight: moderateScale(18),
     fontWeight: "600",
@@ -88,4 +92,5 @@ const styles = StyleSheet.create({
   choiceTextSelected: {
     color: "#dbeafe",
   },
-});
+  });
+}
