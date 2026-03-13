@@ -85,6 +85,7 @@ export default function TabNavigator({
         {(props) => (
           <Learn
             {...props}
+            userData={safeUserData}
             learningPath={safeLearningPath}
             onCompleteLesson={onCompleteLesson}
           />

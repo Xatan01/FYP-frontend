@@ -96,10 +96,21 @@ export default function QuizContent({
               You answered {answeredCount} out of {totalQuestions} questions.
             </Text>
             {!isProfilingQuiz && submitResult ? (
-              <Text style={styles.questionSummary}>
-                Score: {submitResult.total_correct}/{submitResult.total_questions} ·{" "}
-                {submitResult.passed ? "Passed" : "Not passed"} · Points: {submitResult.points_awarded}
-              </Text>
+              <>
+                <Text style={styles.questionSummary}>
+                  Score: {submitResult.total_correct}/{submitResult.total_questions} ·{" "}
+                  {submitResult.passed ? "Passed" : "Not passed"} · Points: {submitResult.points_awarded}
+                </Text>
+                {!submitResult.passed ? (
+                  <Text style={styles.questionSummary}>
+                    {submitResult.can_retry
+                      ? `Retries remaining: ${submitResult.retries_remaining}. Next retry awards ${Math.round(
+                          Number(submitResult.next_retry_xp_multiplier || 1) * 100
+                        )}% of base retry XP before difficulty scaling.`
+                      : "No retries remaining. Review the explanation and try the next stage when available."}
+                  </Text>
+                ) : null}
+              </>
             ) : null}
             {isProfilingQuiz && submitResult?.assigned_difficulty ? (
               <Text style={styles.questionSummary}>
@@ -115,9 +126,19 @@ export default function QuizContent({
                   <Text style={styles.primaryBtnText}>Unlock subtopic</Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={onRestart}>
-                  <Text style={styles.primaryBtnText}>Restart</Text>
-                </TouchableOpacity>
+                submitResult?.passed ? (
+                  <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={() => navigation.goBack()}>
+                    <Text style={styles.primaryBtnText}>Back to learning path</Text>
+                  </TouchableOpacity>
+                ) : submitResult?.can_retry ? (
+                  <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={onRestart}>
+                    <Text style={styles.primaryBtnText}>Retry quiz</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={() => navigation.goBack()}>
+                    <Text style={styles.primaryBtnText}>Back to learning path</Text>
+                  </TouchableOpacity>
+                )
               )}
             </View>
           </View>

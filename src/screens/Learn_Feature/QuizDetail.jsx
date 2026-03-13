@@ -109,7 +109,7 @@ export default function QuizDetail({ route, navigation }) {
         : await submitQuizBySubtopicAndDifficulty(subtopicId, difficulty, payload);
 
       if (!isProfilingQuiz && result?.passed && typeof onQuizPassed === "function") {
-        await Promise.resolve(onQuizPassed());
+        await Promise.resolve(onQuizPassed(result));
       }
 
       setSubmitResult(result || null);
