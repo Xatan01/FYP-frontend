@@ -94,7 +94,13 @@ function cloneProgressState(value) {
   };
 }
 
-export default function Learn({ learningPath = [], userData = {}, navigation, route }) {
+export default function Learn({
+  learningPath = [],
+  userData = {},
+  navigation,
+  route,
+  onCompleteLesson,
+}) {
   const { palette, isLight } = useAppTheme();
   const [backendPath, setBackendPath] = useState([]);
   const [topicPanels, setTopicPanels] = useState(() =>
@@ -420,8 +426,17 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
       difficulty: String(lesson.difficulty ?? "basic").trim().toLowerCase(),
       lessonTitle: lesson.title,
       stepIndex: index + 1,
-      onQuizPassed: () => {
+      onQuizPassed: async (result) => {
         completeLesson(unit, lesson);
+        if (typeof onCompleteLesson === "function") {
+          await Promise.resolve(
+            onCompleteLesson({
+              xpAwarded: Number(result?.points_awarded || 0),
+              subtopicId: unit?.subtopic_id,
+              lessonId: lesson?.id,
+            })
+          );
+        }
       },
     });
   };
