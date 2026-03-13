@@ -51,6 +51,12 @@ export function submitQuizBySubtopicAndDifficulty(subtopicId, difficulty, answer
   return apiFetch(path, { method: "POST", body: answers });
 }
 
+export function fetchSubtopicSummary(subtopicId) {
+  const path = `/quiz/${subtopicId}/summary`;
+  console.log(`[learning] fetching subtopic summary`, { subtopicId, path });
+  return apiFetch(path);
+}
+
 export async function fetchAvailableTopics({ maxTopicId = 3 } = {}) {
   const ids = Array.from({ length: maxTopicId }, (_, i) => i + 1);
   console.log(`[learning] scanning topics`, {

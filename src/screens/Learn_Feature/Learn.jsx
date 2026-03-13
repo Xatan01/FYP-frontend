@@ -25,7 +25,7 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { fetchLessonByTopicId } from "../../api/learning";
+import { fetchLessonByTopicId, fetchSubtopicSummary } from "../../api/learning";
 import usePersistedState from "../../hooks/usePersistedState";
 import usePulseAnimation from "../../hooks/usePulseAnimation";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -36,7 +36,7 @@ const TOPIC_NAME_MAP = {
   3: "Key Market Terms",
 };
 const TOPIC_IDS = Object.keys(TOPIC_NAME_MAP).map((id) => Number(id));
-const LEARNING_PROGRESS_KEY = "learningPathProgressV1";
+const LESSON_COMPLETION_KEY = "learningLessonCompletionV2";
 
 const formatSubtopicName = (name = "") => {
   const cleaned = String(name).replace(/_/g, " ").trim();
@@ -61,30 +61,18 @@ const getDifficultyTier = (difficulty = "") => {
 
 function createDefaultProgressState() {
   return {
-    unlockedSubtopics: {},
-    profilingCompletedSubtopics: {},
     completedLessonsBySubtopic: {},
   };
 }
 
 function normalizeProgressState(value) {
   const base = value && typeof value === "object" ? value : {};
-  const unlockedSubtopics =
-    base.unlockedSubtopics && typeof base.unlockedSubtopics === "object"
-      ? base.unlockedSubtopics
-      : {};
-  const profilingCompletedSubtopics =
-    base.profilingCompletedSubtopics && typeof base.profilingCompletedSubtopics === "object"
-      ? base.profilingCompletedSubtopics
-      : {};
   const completedLessonsBySubtopic =
     base.completedLessonsBySubtopic && typeof base.completedLessonsBySubtopic === "object"
       ? base.completedLessonsBySubtopic
       : {};
 
   return {
-    unlockedSubtopics: { ...unlockedSubtopics },
-    profilingCompletedSubtopics: { ...profilingCompletedSubtopics },
     completedLessonsBySubtopic: Object.fromEntries(
       Object.entries(completedLessonsBySubtopic).map(([subtopicId, lessonIds]) => {
         if (!Array.isArray(lessonIds)) return [subtopicId, []];
@@ -97,8 +85,6 @@ function normalizeProgressState(value) {
 function cloneProgressState(value) {
   const normalized = normalizeProgressState(value);
   return {
-    unlockedSubtopics: { ...normalized.unlockedSubtopics },
-    profilingCompletedSubtopics: { ...normalized.profilingCompletedSubtopics },
     completedLessonsBySubtopic: Object.fromEntries(
       Object.entries(normalized.completedLessonsBySubtopic).map(([subtopicId, lessonIds]) => [
         subtopicId,
@@ -106,15 +92,6 @@ function cloneProgressState(value) {
       ])
     ),
   };
-}
-
-function isSubtopicCompleted(unit, progressState) {
-  const lessons = Array.isArray(unit?.lessons) ? unit.lessons : [];
-  if (lessons.length === 0) return false;
-
-  const subtopicKey = String(unit.subtopic_id ?? "");
-  const completedLessonIds = new Set(progressState.completedLessonsBySubtopic[subtopicKey] || []);
-  return lessons.every((lesson) => completedLessonIds.has(String(lesson.id)));
 }
 
 export default function Learn({ learningPath = [], userData = {}, navigation, route }) {
@@ -136,7 +113,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
     setValue: setProgressState,
     loading: progressLoading,
     error: progressError,
-  } = usePersistedState(LEARNING_PROGRESS_KEY, createDefaultProgressState());
+  } = usePersistedState(LESSON_COMPLETION_KEY, createDefaultProgressState());
 
   const loadTopicUnits = useCallback(async (topicId) => {
     const topicKey = String(topicId);
@@ -160,6 +137,11 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
           topic_name: topic.topic_name,
           subtopic_id: subtopic.subtopic_id,
           subtopic_name: subtopic.subtopic_name,
+          is_unlocked: subtopic.is_unlocked === true,
+          can_unlock: subtopic.can_unlock === true,
+          requires_profiling: subtopic.requires_profiling !== false,
+          stage: subtopic.stage ?? null,
+          is_completed: subtopic.is_completed === true,
           subtopic_summary: subtopic?.subtopic_summary?.summary_content ?? null,
           lessons: contents.map((content, cIdx) => ({
             id: content.content_id ?? `${subtopic.subtopic_id}-${cIdx + 1}`,
@@ -230,6 +212,24 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
     [loadTopicUnits, topicPanels]
   );
 
+  useEffect(() => {
+    const refreshTopicId = route?.params?.refreshTopicId;
+    const refreshAt = route?.params?.refreshAt;
+    if (!refreshTopicId || !refreshAt) return;
+
+    loadTopicUnits(refreshTopicId).finally(() => {
+      navigation.setParams?.({
+        refreshTopicId: undefined,
+        refreshAt: undefined,
+      });
+    });
+  }, [
+    loadTopicUnits,
+    navigation,
+    route?.params?.refreshAt,
+    route?.params?.refreshTopicId,
+  ]);
+
   const normalizedProgressState = useMemo(
     () => normalizeProgressState(progressState),
     [progressState]
@@ -256,26 +256,17 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
   }, [learningPath, backendPath]);
 
   const pathWithProgress = useMemo(() => {
-    return sourcePath.map((unit, unitIndex) => {
+    return sourcePath.map((unit) => {
       const subtopicKey = String(unit.subtopic_id ?? "");
       const lessons = Array.isArray(unit.lessons) ? unit.lessons : [];
       const completedLessonIds = new Set(
         normalizedProgressState.completedLessonsBySubtopic[subtopicKey] || []
       );
 
-      const isUnlocked = normalizedProgressState.unlockedSubtopics[subtopicKey] === true;
-      const previousUnitInTopic =
-        unitIndex > 0
-          ? sourcePath
-              .slice(0, unitIndex)
-              .reverse()
-              .find((candidate) => candidate.topic_id === unit.topic_id)
-          : null;
-      const previousSubtopicCompleted =
-        !previousUnitInTopic || isSubtopicCompleted(previousUnitInTopic, normalizedProgressState);
-      const canUnlock = !isUnlocked && previousSubtopicCompleted;
-      const requiresProfiling =
-        normalizedProgressState.profilingCompletedSubtopics[subtopicKey] !== true;
+      const isUnlocked = unit.is_unlocked === true;
+      const canUnlock = unit.can_unlock === true;
+      const requiresProfiling = unit.requires_profiling !== false;
+      const isCompleted = unit.is_completed === true;
 
       let foundCurrentStep = false;
       const lessonsWithStatus = lessons.map((lesson) => {
@@ -285,7 +276,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
           return { ...lesson, status: "locked" };
         }
 
-        if (completedLessonIds.has(lessonId)) {
+        if (isCompleted || completedLessonIds.has(lessonId)) {
           return { ...lesson, status: "completed" };
         }
 
@@ -315,7 +306,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
         unitProgress,
         lessons: lessonsWithStatus,
         visibleLessons,
-        summaryUnlocked: isUnlocked && allLessonsCompleted,
+        summaryUnlocked: isUnlocked && (isCompleted || allLessonsCompleted),
       };
     });
   }, [sourcePath, normalizedProgressState]);
@@ -331,44 +322,12 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
     [setProgressState]
   );
 
-  const unlockSubtopic = useCallback(
-    (subtopicId, { profilingCompleted = false } = {}) => {
-      const subtopicKey = String(subtopicId ?? "");
-      updateProgressState((draft) => {
-        draft.unlockedSubtopics[subtopicKey] = true;
-        if (profilingCompleted) {
-          draft.profilingCompletedSubtopics[subtopicKey] = true;
-        }
-        return draft;
-      });
-    },
-    [updateProgressState]
-  );
-
-  useEffect(() => {
-    const completedSubtopicId = route?.params?.profilingCompletedSubtopicId;
-    const completedAt = route?.params?.profilingCompletedAt;
-    if (!completedSubtopicId || !completedAt) return;
-
-    unlockSubtopic(completedSubtopicId, { profilingCompleted: true });
-    navigation.setParams?.({
-      profilingCompletedSubtopicId: undefined,
-      profilingCompletedAt: undefined,
-    });
-  }, [
-    navigation,
-    route?.params?.profilingCompletedAt,
-    route?.params?.profilingCompletedSubtopicId,
-    unlockSubtopic,
-  ]);
-
   const completeLesson = useCallback(
     (unit, lesson) => {
       const subtopicKey = String(unit?.subtopic_id ?? "");
       const lessonId = String(lesson?.id ?? "");
 
       updateProgressState((draft) => {
-        draft.unlockedSubtopics[subtopicKey] = true;
         const existing = new Set(draft.completedLessonsBySubtopic[subtopicKey] || []);
         existing.add(lessonId);
         draft.completedLessonsBySubtopic[subtopicKey] = Array.from(existing);
@@ -422,21 +381,27 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
     });
   };
 
-  const handlePathItemPress = (unit, lesson, index) => {
+  const handlePathItemPress = async (unit, lesson, index) => {
     if (lesson.type === "summary") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      navigation.navigate("LessonDetail", {
-        topicId: unit.topic_id,
-        topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
-        subtopicId: unit.subtopic_id,
-        subtopicName: formatSubtopicName(unit.subtopic_name),
-        contentId: lesson.id,
-        contentTitle: `${formatSubtopicName(unit.subtopic_name)} Summary`,
-        difficulty: "Summary",
-        summary: null,
-        contentJson: unit.subtopic_summary,
-        stepIndex: index + 1,
-      });
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        const summary = await fetchSubtopicSummary(unit.subtopic_id);
+        await loadTopicUnits(unit.topic_id);
+        navigation.navigate("LessonDetail", {
+          topicId: unit.topic_id,
+          topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
+          subtopicId: unit.subtopic_id,
+          subtopicName: formatSubtopicName(unit.subtopic_name),
+          contentId: lesson.id,
+          contentTitle: `${formatSubtopicName(unit.subtopic_name)} Summary`,
+          difficulty: "Summary",
+          summary: null,
+          contentJson: summary?.summary_content ?? unit.subtopic_summary,
+          stepIndex: index + 1,
+        });
+      } catch (err) {
+        Alert.alert("Summary unavailable", err?.message || "Failed to load summary.");
+      }
       return;
     }
 
@@ -490,8 +455,8 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
                 difficulty: "basic",
                 lessonTitle: `${formatSubtopicName(unit.subtopic_name)} Profiling`,
                 quizMode: "profiling",
-                onProfilingComplete: () => {
-                  unlockSubtopic(unit.subtopic_id, { profilingCompleted: true });
+                onProfilingComplete: async () => {
+                  await loadTopicUnits(unit.topic_id);
                 },
               });
             },
@@ -502,7 +467,7 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    unlockSubtopic(unit.subtopic_id);
+    loadTopicUnits(unit.topic_id);
   };
 
   const isInitialLoading = progressLoading;

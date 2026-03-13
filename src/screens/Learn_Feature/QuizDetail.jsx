@@ -165,8 +165,8 @@ export default function QuizDetail({ route, navigation }) {
     navigation.navigate("MainTabs", {
       screen: "Learn",
       params: {
-        profilingCompletedSubtopicId: subtopicId,
-        profilingCompletedAt: Date.now(),
+        refreshTopicId: topicId,
+        refreshAt: Date.now(),
       },
     });
   };
