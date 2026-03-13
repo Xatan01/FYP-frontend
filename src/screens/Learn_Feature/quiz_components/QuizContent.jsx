@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import {
-  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import { moderateScale, scale, verticalScale } from "../../../styles/responsive"
 import QuestionInteraction from "./QuestionInteraction";
 import { formatDifficulty } from "./quizUtils";
 import { useAppTheme } from "../../../context/ThemeContext";
+import LoadingState from "../../../components/LoadingState";
 
 export default function QuizContent({
   navigation,
@@ -68,10 +68,10 @@ export default function QuizContent({
         </LinearGradient>
 
         {loading ? (
-          <View style={styles.centerCard}>
-            <ActivityIndicator color="#7dd3fc" />
-            <Text style={styles.centerText}>Loading quiz questions...</Text>
-          </View>
+          <LoadingState
+            title="Loading quiz"
+            message="Building the next question set and answer flow."
+          />
         ) : null}
 
         {!loading && error ? (

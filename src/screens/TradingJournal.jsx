@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft, NotebookPen, Plus } from "lucide-react-native";
@@ -19,6 +18,7 @@ import {
   updateJournalEntry,
 } from "../api/tradingJournal";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 function parsePnlAmount(rawValue) {
   const normalized = String(rawValue || "").trim();
@@ -150,10 +150,11 @@ export default function TradingJournal({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       {loading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={palette.accent} />
-          <Text style={styles.loadingText}>Loading journal...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading journal"
+          message="Gathering your trade notes, outcomes, and saved reflections."
+        />
       ) : (
         <ScrollView
           style={styles.container}

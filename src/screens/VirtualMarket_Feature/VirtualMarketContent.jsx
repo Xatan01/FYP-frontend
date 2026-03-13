@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import {
-  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import PortfolioSummaryCard from "./components/PortfolioSummaryCard";
 import StocksCard from "./components/StocksCard";
 import TradeTicketCard from "./components/TradeTicketCard";
 import { useAppTheme } from "../../context/ThemeContext";
+import LoadingState from "../../components/LoadingState";
 
 export default function VirtualMarketContent({
   navigation,
@@ -65,10 +65,10 @@ export default function VirtualMarketContent({
         </LinearGradient>
 
         {loading ? (
-          <View style={styles.centerCard}>
-            <ActivityIndicator color={palette.accent} />
-            <Text style={styles.centerText}>Loading virtual market...</Text>
-          </View>
+          <LoadingState
+            title="Loading virtual market"
+            message="Syncing portfolio balances, orders, and tradable stocks."
+          />
         ) : null}
 
         {!loading && error ? (

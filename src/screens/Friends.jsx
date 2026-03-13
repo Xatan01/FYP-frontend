@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -25,6 +24,7 @@ import {
   updateMyFriendProfile,
 } from "../api/friends";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 function getInitials(username) {
   const raw = String(username || "").trim().replace(/^@/, "");
@@ -216,10 +216,11 @@ export default function Friends({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={palette.accent} />
-          <Text style={styles.loadingText}>Loading friends...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading your circle"
+          message="Syncing friends, requests, and your public handle."
+        />
       </SafeAreaView>
     );
   }

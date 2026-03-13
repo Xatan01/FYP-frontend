@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import { moderateScale, scale, verticalScale } from "../styles/responsive";
 import { fetchLeaderboards } from "../api/leaderboard";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 const METRIC_TABS = [
   { key: "xp", label: "Learning XP", icon: Zap },
@@ -169,10 +169,10 @@ export default function Community() {
         </LinearGradient>
 
         {loading ? (
-          <View style={styles.centerCard}>
-            <ActivityIndicator color={palette.accent} />
-            <Text style={styles.centerText}>Loading leaderboards...</Text>
-          </View>
+          <LoadingState
+            title="Loading leaderboards"
+            message="Ranking the latest global and friends performance."
+          />
         ) : null}
 
         {!loading && error ? (

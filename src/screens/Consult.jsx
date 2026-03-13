@@ -6,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Image,
 } from "react-native";
 import { MessageCircle, CalendarCheck2, Star } from "lucide-react-native";
@@ -18,6 +17,7 @@ import {
   fetchConsultationExperts,
 } from "../api/consultation";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 function toMoney(amount, currency = "USD") {
   const numeric = Number(amount);
@@ -119,10 +119,11 @@ export default function Consult({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       {loading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#38bdf8" />
-          <Text style={styles.loadingText}>Loading consultation experts...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading consultants"
+          message="Fetching available experts, bookings, and chat access."
+        />
       ) : (
         <ScrollView
           style={styles.container}

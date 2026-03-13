@@ -5,6 +5,7 @@ import Login from "../screens/Login";
 import Register from "../screens/Register";
 import PasswordReset from "../screens/PasswordReset";
 import AiInsights from "../screens/AiInsights";
+import FinBot from "../screens/FinBot";
 import News from "../screens/News";
 import Charting from "../screens/Charting";
 import TradingJournal from "../screens/TradingJournal";
@@ -20,6 +21,7 @@ import VirtualMarket from "../screens/VirtualMarket_Feature/VirtualMarket";
 import LessonDetail from "../screens/Learn_Feature/LessonDetail";
 import QuizDetail from "../screens/Learn_Feature/QuizDetail";
 import { useAuth } from "../context/AuthContext";
+import LoadingState from "../components/LoadingState";
 
 const Stack = createNativeStackNavigator();
 
@@ -33,7 +35,13 @@ export default function RootNavigator({
   const { session, loading } = useAuth();
 
   if (loading) {
-    return null;
+    return (
+      <LoadingState
+        variant="screen"
+        title="Starting Finwise"
+        message="Restoring your session and syncing your workspace."
+      />
+    );
   }
 
   return (
@@ -61,6 +69,7 @@ export default function RootNavigator({
           <Stack.Screen name="QuizDetail" component={QuizDetail} />
 
           <Stack.Screen name="AiInsights" component={AiInsights} />
+          <Stack.Screen name="FinBot" component={FinBot} />
           <Stack.Screen name="News" component={News} />
           <Stack.Screen name="Charting" component={Charting} />
           <Stack.Screen name="TradingJournal" component={TradingJournal} />

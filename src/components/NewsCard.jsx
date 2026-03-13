@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Newspaper } from "lucide-react-native";
 import { useAppTheme } from "../context/ThemeContext";
 import { fetchMarketNews } from "../api/market";
+import LoadingState from "./LoadingState";
 
 export default function NewsCard({ onPress }) {
   const { palette } = useAppTheme();
@@ -37,10 +38,11 @@ export default function NewsCard({ onPress }) {
     <Wrapper style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <Text style={styles.header}>Latest Financial News</Text>
       {loading ? (
-        <View style={styles.stateRow}>
-          <ActivityIndicator size="small" color="#f59e0b" />
-          <Text style={styles.stateText}>Loading latest headlines...</Text>
-        </View>
+        <LoadingState
+          variant="inline"
+          title="Loading headlines"
+          message="Pulling the latest financial news."
+        />
       ) : items.length ? (
         items.map((item) => (
           <View key={item.news_id || item.url} style={styles.newsRow}>

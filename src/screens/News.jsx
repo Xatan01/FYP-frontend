@@ -6,13 +6,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Linking,
 } from "react-native";
 import { Newspaper, TrendingUp } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { useAppTheme } from "../context/ThemeContext";
 import { fetchMarketNews } from "../api/market";
+import LoadingState from "../components/LoadingState";
 
 export default function News() {
   const { palette } = useAppTheme();
@@ -84,10 +84,10 @@ export default function News() {
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {loading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="large" color="#f59e0b" />
-            <Text style={styles.loadingText}>Refreshing news...</Text>
-          </View>
+          <LoadingState
+            title="Refreshing market news"
+            message="Collecting the latest headlines, summaries, and symbols."
+          />
         ) : !items.length ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>No market news available.</Text>

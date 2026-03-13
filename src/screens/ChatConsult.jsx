@@ -17,6 +17,7 @@ import {
   sendConsultationMessage,
 } from "../api/consultation";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 export default function ChatConsult({ route }) {
   const { palette } = useAppTheme();
@@ -106,10 +107,11 @@ export default function ChatConsult({ route }) {
       </View>
 
       {loading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#38bdf8" />
-          <Text style={styles.loadingText}>Loading chat...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading consultation chat"
+          message="Bringing in your advisor thread and recent messages."
+        />
       ) : (
         <>
           {!!error && <Text style={styles.error}>{error}</Text>}

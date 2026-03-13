@@ -7,12 +7,12 @@ import {
   Switch,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { Bell, Filter, Flame } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import usePersistedState from "../hooks/usePersistedState";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 export default function AlertsSettings() {
   const { palette, isLight } = useAppTheme();
@@ -41,10 +41,11 @@ export default function AlertsSettings() {
   return (
     <SafeAreaView style={styles.safe}>
       {loading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Loading settings...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading settings"
+          message="Pulling your alert preferences and notification options."
+        />
       ) : (
         <ScrollView
           style={styles.container}

@@ -6,11 +6,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { Activity } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 const sectors = [
   { name: "Banks", change: "+1.4%", tone: "#16a34a" },
@@ -63,10 +63,10 @@ export default function MarketTrends() {
         <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
 
         {loading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="large" color="#2563eb" />
-            <Text style={styles.loadingText}>Refreshing trends...</Text>
-          </View>
+          <LoadingState
+            title="Refreshing trends"
+            message="Recomputing sector momentum, sentiment, and market signals."
+          />
         ) : (
           <>
             <View style={styles.signalCard}>

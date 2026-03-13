@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Image,
   Animated,
 } from "react-native";
@@ -16,6 +15,7 @@ import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { addWatchlistItem, fetchWatchlist, removeWatchlistItem } from "../api/watchlist";
 import { fetchMarketQuotes, fetchPopularMarketQuotes, searchMarketSymbols } from "../api/market";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 function getLogoUrl(symbol) {
   return `https://financialmodelingprep.com/image-stock/${encodeURIComponent(symbol)}.png`;
@@ -301,10 +301,11 @@ export default function Watchlist({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       {loading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Loading watchlist...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading watchlist"
+          message="Collecting your saved symbols, popular names, and latest quotes."
+        />
       ) : (
         <ScrollView
           style={styles.container}

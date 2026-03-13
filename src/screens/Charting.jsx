@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   TextInput,
   ScrollView,
 } from "react-native";
@@ -14,6 +13,7 @@ import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { fetchMarketChart, searchMarketSymbols } from "../api/market";
 import TradingViewChart from "../components/TradingViewChart";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 const ranges = ["1D", "1W", "1M", "1Y"];
 const indicators = ["MA(20)", "RSI", "MACD", "Volume"];
@@ -387,10 +387,10 @@ export default function Charting({ route }) {
         </View>
 
         {loading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="large" color="#2563eb" />
-            <Text style={styles.loadingText}>Refreshing chart...</Text>
-          </View>
+          <LoadingState
+            title="Refreshing chart"
+            message={`Pulling the latest candles and indicators for ${symbol}.`}
+          />
         ) : (
           <View style={styles.card}>
             <View style={styles.symbolRow}>

@@ -6,11 +6,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { PieChart, TrendingUp } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
 import { useAppTheme } from "../context/ThemeContext";
+import LoadingState from "../components/LoadingState";
 
 const holdings = [
   { symbol: "DBS", name: "DBS Bank", value: "$12,400", weight: "28%" },
@@ -62,10 +62,10 @@ export default function Portfolio() {
         <Text style={styles.updatedText}>Last updated: {lastUpdated}</Text>
 
         {loading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.loadingText}>Refreshing portfolio...</Text>
-          </View>
+          <LoadingState
+            title="Refreshing portfolio"
+            message="Updating holdings, allocation, and today&apos;s performance."
+          />
         ) : (
           <>
             <View style={styles.card}>

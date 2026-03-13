@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Animated,
   Alert,
-  ActivityIndicator,
 } from "react-native";
 import { scale, verticalScale, moderateScale } from "../../styles/responsive";
 import { LinearGradient } from "expo-linear-gradient";
@@ -29,6 +28,7 @@ import { fetchLessonByTopicId, fetchSubtopicSummary } from "../../api/learning";
 import usePersistedState from "../../hooks/usePersistedState";
 import usePulseAnimation from "../../hooks/usePulseAnimation";
 import { useAppTheme } from "../../context/ThemeContext";
+import LoadingState from "../../components/LoadingState";
 
 const TOPIC_NAME_MAP = {
   1: "Introduction to Stocks",
@@ -475,10 +475,11 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
   return (
     <SafeAreaView style={styles.safe}>
       {isInitialLoading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#7dd3fc" />
-          <Text style={styles.loadingText}>Loading learning path...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading learning path"
+          message="Restoring lesson progress and unlocking the next steps."
+        />
       ) : (
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -524,10 +525,10 @@ export default function Learn({ learningPath = [], userData = {}, navigation, ro
 
                 {panel.expanded ? (
                   panel.loading ? (
-                    <View style={styles.topicStatusCard}>
-                      <ActivityIndicator size="small" color="#7dd3fc" />
-                      <Text style={styles.topicStatusText}>Loading subtopics...</Text>
-                    </View>
+                    <LoadingState
+                      title="Loading subtopics"
+                      message={`Pulling the latest lessons for ${mappedTopicName}.`}
+                    />
                   ) : panel.error ? (
                     <View style={styles.topicStatusCard}>
                       <Text style={styles.topicErrorText}>{panel.error}</Text>

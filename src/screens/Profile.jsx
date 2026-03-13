@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
@@ -25,6 +24,7 @@ import { moderateScale, scale, verticalScale } from "../styles/responsive";
 import { useAuth } from "../context/AuthContext";
 import { fetchProfileSettings, updateProfileSettings } from "../api/profile";
 import { fetchStockShopCatalog, purchaseStockUnlock } from "../api/shop";
+import LoadingState from "../components/LoadingState";
 
 const DEFAULT_SETTINGS = {
   theme_preference: "dark",
@@ -404,10 +404,11 @@ export default function Profile({
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={palette.accent} />
-          <Text style={styles.loadingText}>Loading profile...</Text>
-        </View>
+        <LoadingState
+          variant="screen"
+          title="Loading profile"
+          message="Syncing settings, shop unlocks, and your account view."
+        />
       </SafeAreaView>
     );
   }
@@ -666,4 +667,3 @@ export default function Profile({
     </SafeAreaView>
   );
 }
-

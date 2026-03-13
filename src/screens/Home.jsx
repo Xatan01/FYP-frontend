@@ -12,9 +12,11 @@ import {
   Star,
   Play,
   Brain,
+  Bot,
   BarChart3,
   LineChart,
   Eye,
+  MessageCircle,
   Newspaper,
   NotebookPen,
   Sparkles,
@@ -33,8 +35,8 @@ const LOTTIE_ROBOT = "https://lottie.host/1b98b9a2-67c4-406e-8e89-322141c2d0f3/f
 // AI-generated recommendation
 const aiRecommendation = {
   title: "AI Insights",
-  description: "See today's model signals for your watchlist and sector trends.",
-  xp: 100,
+  description: "Signals and insight modules will live here once this feature is ready.",
+  status: "Coming soon",
   action: "AiInsights",
 };
 
@@ -73,6 +75,20 @@ export default function Home({ userData, learningPath, navigation }) {
       icon: BarChart3,
       route: "Charting",
       tone: "#1d4ed8",
+    },
+    {
+      label: "FinBot",
+      description: "Open the trading chatbot for guided questions and in-app help.",
+      icon: Bot,
+      route: "FinBot",
+      tone: "#7c3aed",
+    },
+    {
+      label: "Consult",
+      description: "Chat with or book a human advisor when you need direct help.",
+      icon: MessageCircle,
+      route: "Consult",
+      tone: "#0891b2",
     },
     {
       label: "AI Insights",
@@ -150,7 +166,24 @@ export default function Home({ userData, learningPath, navigation }) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionHeader}>Quick Actions</Text>
+        {/* --- AI Recommendation Card --- */}
+          <TouchableOpacity 
+            style={styles.aiCard}
+            onPress={() => navigation.navigate(aiRecommendation.action)}
+          >
+            <View style={styles.aiTextContainer}>
+              <View style={styles.aiHeader}>
+                <Brain size={16} color="#a855f7" />
+                <Text style={styles.aiTitle}>{aiRecommendation.title}</Text>
+              </View>
+              <Text style={styles.aiDescription}>{aiRecommendation.description}</Text>
+              <Text style={styles.aiReward}>{aiRecommendation.status}</Text>
+            </View>
+            <LottieView source={{ uri: LOTTIE_ROBOT }} autoPlay loop style={styles.aiLottie} />
+          </TouchableOpacity>
+
+
+        <Text style={styles.sectionHeader}>Actions</Text>
         <View style={styles.quickGrid}>
           {quickActions.map((action) => (
             <TouchableOpacity
@@ -166,6 +199,7 @@ export default function Home({ userData, learningPath, navigation }) {
             </TouchableOpacity>
           ))}
         </View>
+        
 
         {/* --- Main Cards --- */}
         <View style={{ gap: verticalScale(16) }}>
@@ -187,22 +221,6 @@ export default function Home({ userData, learningPath, navigation }) {
             </TouchableOpacity>
           )}
 
-          {/* --- AI Recommendation Card --- */}
-          <TouchableOpacity 
-            style={styles.aiCard}
-            onPress={() => navigation.navigate(aiRecommendation.action)}
-          >
-            <View style={styles.aiTextContainer}>
-              <View style={styles.aiHeader}>
-                <Brain size={16} color="#a855f7" />
-                <Text style={styles.aiTitle}>{aiRecommendation.title}</Text>
-              </View>
-              <Text style={styles.aiDescription}>{aiRecommendation.description}</Text>
-              <Text style={styles.aiReward}>Earn +{aiRecommendation.xp} XP</Text>
-            </View>
-            <LottieView source={{ uri: LOTTIE_ROBOT }} autoPlay loop style={styles.aiLottie} />
-          </TouchableOpacity>
-
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -213,7 +231,7 @@ export default function Home({ userData, learningPath, navigation }) {
 function buildStyles(palette) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: palette.background },
-    container: { flex: 1 },
+    container: { flex: 1,      marginTop:"3%"},
     greeting: {
       fontSize: moderateScale(24),
       fontWeight: "bold",
@@ -246,6 +264,7 @@ function buildStyles(palette) {
       marginLeft: scale(4),
     },
     sectionHeader: {
+      marginTop:"10%",
       fontSize: moderateScale(16),
       fontWeight: "700",
       color: palette.textPrimary,
