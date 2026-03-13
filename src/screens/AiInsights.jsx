@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -8,15 +8,15 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowRight,
   Bot,
-  Brain,
   Compass,
   Send,
-  Sparkles,
   User,
 } from "lucide-react-native";
 import { scale, verticalScale, moderateScale } from "../styles/responsive";
@@ -29,10 +29,11 @@ import {
   buildFinbotPrompt,
 } from "../lib/finbot";
 import { generateInference } from "../api/inference";
+import { useAppTheme } from "../context/ThemeContext";
 
 const TAB_ROUTES = new Set(["Home", "Learn", "VirtualMarket", "Consult", "Profile"]);
 
-function MessageBubble({ message, onActionPress }) {
+function MessageBubble({ message, onActionPress, palette, styles }) {
   const fromUser = message.role === "user";
   const action = message.action;
 
@@ -40,7 +41,7 @@ function MessageBubble({ message, onActionPress }) {
     <View style={[styles.messageRow, fromUser ? styles.messageRowUser : styles.messageRowBot]}>
       {!fromUser ? (
         <View style={[styles.avatar, styles.avatarBot]}>
-          <Bot size={16} color="#f8fafc" />
+          <Bot size={16} color={palette.accentText} />
         </View>
       ) : null}
 
@@ -54,14 +55,14 @@ function MessageBubble({ message, onActionPress }) {
             <Text style={styles.inlineActionText}>
               Open {action.label || BOT_ROUTE_LABELS[action.route] || action.route}
             </Text>
-            <ArrowRight size={14} color="#0f172a" />
+            <ArrowRight size={14} color={palette.textPrimary} />
           </TouchableOpacity>
         ) : null}
       </View>
 
       {fromUser ? (
         <View style={[styles.avatar, styles.avatarUser]}>
-          <User size={16} color="#eff6ff" />
+          <User size={16} color={palette.accentText} />
         </View>
       ) : null}
     </View>
@@ -69,6 +70,8 @@ function MessageBubble({ message, onActionPress }) {
 }
 
 export default function AiInsights({ navigation }) {
+  const { palette, isLight } = useAppTheme();
+  const styles = useMemo(() => buildStyles(palette, isLight), [palette, isLight]);
   const scrollRef = useRef(null);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState(() => [createWelcomeMessage()]);
@@ -128,384 +131,384 @@ export default function AiInsights({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <LinearGradient colors={["#0f172a", "#111827", "#1e293b"]} style={styles.hero}>
-        <View style={styles.heroTop}>
-          <View style={styles.heroBadge}>
-            <Sparkles size={14} color="#fde68a" />
-            <Text style={styles.heroBadgeText}>FinBot Coach</Text>
-          </View>
-          <TouchableOpacity style={styles.heroCta} onPress={() => handleActionPress("Learn")}>
-            <Compass size={15} color="#082f49" />
-            <Text style={styles.heroCtaText}>Learning Path</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.heroTitle}>Ask anything about learning to trade.</Text>
-        <Text style={styles.heroSubtitle}>
-          FinBot can explain core concepts, suggest the next feature to open, and point users to practice tools inside this app.
-        </Text>
-
-        <View style={styles.heroStats}>
-          <View style={styles.heroStatCard}>
-            <Brain size={16} color="#38bdf8" />
-            <Text style={styles.heroStatValue}>Education first</Text>
-            <Text style={styles.heroStatLabel}>Beginner-friendly answers</Text>
-          </View>
-          <View style={styles.heroStatCard}>
-            <Sparkles size={16} color="#f59e0b" />
-            <Text style={styles.heroStatValue}>Actionable</Text>
-            <Text style={styles.heroStatLabel}>Routes into app features</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      <View style={styles.chatShell}>
-        <Text style={styles.sectionTitle}>Suggested prompts</Text>
-        <View style={styles.modelSwitchRow}>
-          {[
-            { key: "finetuned", label: "Finetuned" },
-            { key: "gemma", label: "Gemma" },
-          ].map((modelOption) => {
-            const active = activeModel === modelOption.key;
-            return (
-              <TouchableOpacity
-                key={modelOption.key}
-                style={[styles.modelChip, active && styles.modelChipActive]}
-                onPress={() => setActiveModel(modelOption.key)}
-              >
-                <Text style={[styles.modelChipText, active && styles.modelChipTextActive]}>
-                  {modelOption.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.promptRow}
-        >
-          {BOT_PROMPTS.map((prompt) => (
-            <TouchableOpacity
-              key={prompt}
-              style={styles.promptChip}
-              onPress={() => handleSend(prompt)}
-            >
-              <Text style={styles.promptChipText}>{prompt}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <ScrollView
-          ref={scrollRef}
-          style={styles.messages}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              onActionPress={handleActionPress}
-            />
-          ))}
-
-          {isTyping ? (
-            <View style={[styles.messageRow, styles.messageRowBot]}>
-              <View style={[styles.avatar, styles.avatarBot]}>
-                <Bot size={16} color="#f8fafc" />
-              </View>
-              <View style={[styles.messageBubble, styles.messageBubbleBot, styles.typingBubble]}>
-                <ActivityIndicator size="small" color="#2563eb" />
-                <Text style={styles.typingText}>FinBot is thinking...</Text>
-              </View>
-            </View>
-          ) : null}
-        </ScrollView>
-
-        <View style={styles.inputWrap}>
-          <TextInput
-            style={styles.input}
-            placeholder="Ask about candlesticks, risk, practice trading, news, or next steps"
-            placeholderTextColor="#94a3b8"
-            value={input}
-            onChangeText={setInput}
-            multiline
-            editable={!isTyping}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, (!input.trim() || isTyping) && styles.sendButtonDisabled]}
-            onPress={() => handleSend()}
-            disabled={!input.trim() || isTyping}
+      <KeyboardAvoidingView
+        style={styles.safe}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? verticalScale(8) : 0}
+      >
+        <View style={styles.chatShell}>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.messages}
+            contentContainerStyle={styles.messagesContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Send size={18} color="#eff6ff" />
-          </TouchableOpacity>
+            <LinearGradient colors={[palette.heroStart, palette.heroEnd]} style={styles.hero}>
+              <Text style={[styles.heroTitle, isLight && styles.heroTitleLight]}>
+                Ask anything about learning to trade.
+              </Text>
+              <Text style={[styles.heroSubtitle, isLight && styles.heroSubtitleLight]}>
+                FinBot can explain core concepts, suggest the next feature to open, and point users to practice tools inside this app.
+              </Text>
+
+              <TouchableOpacity style={styles.heroActionCard} onPress={() => handleActionPress("Learn")}>
+                <View style={styles.heroActionIcon}>
+                  <Compass size={18} color={palette.accentText} />
+                </View>
+                <View style={styles.heroActionCopy}>
+                  <Text style={[styles.heroActionTitle, isLight && styles.heroActionTitleLight]}>
+                    Learning Path
+                  </Text>
+                  <Text style={styles.heroActionText}>
+                    Start with structured lessons, then move into guided practice.
+                  </Text>
+                </View>
+                <ArrowRight size={18} color={isLight ? palette.accent : palette.white} />
+              </TouchableOpacity>
+            </LinearGradient>
+
+            <View style={styles.topSection}>
+              <Text style={styles.sectionTitle}>Suggested prompts</Text>
+              <View style={styles.modelSwitchRow}>
+                {[
+                  { key: "finetuned", label: "Finetuned" },
+                  { key: "gemma", label: "Gemma" },
+                ].map((modelOption) => {
+                  const active = activeModel === modelOption.key;
+                  return (
+                    <TouchableOpacity
+                      key={modelOption.key}
+                      style={[styles.modelChip, active && styles.modelChipActive]}
+                      onPress={() => setActiveModel(modelOption.key)}
+                    >
+                      <Text style={[styles.modelChipText, active && styles.modelChipTextActive]}>
+                        {modelOption.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.promptRow}
+                keyboardShouldPersistTaps="handled"
+              >
+                {BOT_PROMPTS.map((prompt) => (
+                  <TouchableOpacity
+                    key={prompt}
+                    style={styles.promptChip}
+                    onPress={() => handleSend(prompt)}
+                  >
+                    <Text style={styles.promptChipText}>{prompt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.messageThread}>
+              {messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  onActionPress={handleActionPress}
+                  palette={palette}
+                  styles={styles}
+                />
+              ))}
+
+              {isTyping ? (
+                <View style={[styles.messageRow, styles.messageRowBot]}>
+                  <View style={[styles.avatar, styles.avatarBot]}>
+                    <Bot size={16} color={palette.accentText} />
+                  </View>
+                  <View style={[styles.messageBubble, styles.messageBubbleBot, styles.typingBubble]}>
+                    <ActivityIndicator size="small" color={palette.accent} />
+                    <Text style={styles.typingText}>FinBot is thinking...</Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          </ScrollView>
+
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="Ask about candlesticks, risk, practice trading, news, or next steps"
+              placeholderTextColor={palette.textMuted}
+              value={input}
+              onChangeText={setInput}
+              multiline
+              editable={!isTyping}
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!input.trim() || isTyping) && styles.sendButtonDisabled]}
+              onPress={() => handleSend()}
+              disabled={!input.trim() || isTyping}
+            >
+              <Send size={18} color={isLight ? palette.white : palette.accentText} />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#e2e8f0",
-  },
-  hero: {
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(18),
-    paddingBottom: verticalScale(22),
-  },
-  heroTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: scale(10),
-  },
-  heroBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    backgroundColor: "rgba(250, 204, 21, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(250, 204, 21, 0.22)",
-    borderRadius: scale(999),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(6),
-  },
-  heroBadgeText: {
-    color: "#fef3c7",
-    fontSize: moderateScale(12),
-    fontWeight: "700",
-  },
-  heroCta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    backgroundColor: "#e0f2fe",
-    borderRadius: scale(999),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(7),
-  },
-  heroCtaText: {
-    color: "#082f49",
-    fontSize: moderateScale(12),
-    fontWeight: "700",
-  },
-  heroTitle: {
-    marginTop: verticalScale(16),
-    color: "#f8fafc",
-    fontSize: moderateScale(26),
-    fontWeight: "900",
-    lineHeight: moderateScale(31),
-  },
-  heroSubtitle: {
-    marginTop: verticalScale(8),
-    color: "#cbd5e1",
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(19),
-  },
-  heroStats: {
-    flexDirection: "row",
-    gap: scale(12),
-    marginTop: verticalScale(16),
-  },
-  heroStatCard: {
-    flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.48)",
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.18)",
-    borderRadius: scale(18),
-    padding: scale(12),
-    gap: verticalScale(5),
-  },
-  heroStatValue: {
-    color: "#f8fafc",
-    fontSize: moderateScale(13),
-    fontWeight: "800",
-  },
-  heroStatLabel: {
-    color: "#94a3b8",
-    fontSize: moderateScale(11),
-  },
-  chatShell: {
-    flex: 1,
-    marginTop: -verticalScale(10),
-    backgroundColor: "#f8fafc",
-    borderTopLeftRadius: scale(26),
-    borderTopRightRadius: scale(26),
-    paddingTop: verticalScale(18),
-  },
-  sectionTitle: {
-    paddingHorizontal: scale(18),
-    fontSize: moderateScale(14),
-    fontWeight: "800",
-    color: "#0f172a",
-  },
-  modelSwitchRow: {
-    flexDirection: "row",
-    gap: scale(8),
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(10),
-  },
-  modelChip: {
-    borderRadius: scale(999),
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    backgroundColor: "#ffffff",
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(7),
-  },
-  modelChipActive: {
-    backgroundColor: "#dbeafe",
-    borderColor: "#60a5fa",
-  },
-  modelChipText: {
-    color: "#475569",
-    fontSize: moderateScale(11),
-    fontWeight: "700",
-  },
-  modelChipTextActive: {
-    color: "#1d4ed8",
-  },
-  promptRow: {
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(12),
-    paddingBottom: verticalScale(8),
-    gap: scale(10),
-  },
-  promptChip: {
-    maxWidth: scale(240),
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#dbeafe",
-    borderRadius: scale(18),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(10),
-  },
-  promptChipText: {
-    color: "#1e3a8a",
-    fontSize: moderateScale(12),
-    fontWeight: "600",
-  },
-  messages: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(10),
-    paddingBottom: verticalScale(14),
-    gap: verticalScale(12),
-  },
-  messageRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: scale(8),
-  },
-  messageRowBot: {
-    justifyContent: "flex-start",
-  },
-  messageRowUser: {
-    justifyContent: "flex-end",
-  },
-  avatar: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: scale(16),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarBot: {
-    backgroundColor: "#1d4ed8",
-  },
-  avatarUser: {
-    backgroundColor: "#0f172a",
-  },
-  messageBubble: {
-    maxWidth: "82%",
-    borderRadius: scale(18),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(11),
-  },
-  messageBubbleBot: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#dbeafe",
-    borderBottomLeftRadius: scale(6),
-  },
-  messageBubbleUser: {
-    backgroundColor: "#1d4ed8",
-    borderBottomRightRadius: scale(6),
-  },
-  messageText: {
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(19),
-  },
-  messageTextBot: {
-    color: "#1e293b",
-  },
-  messageTextUser: {
-    color: "#eff6ff",
-  },
-  inlineAction: {
-    marginTop: verticalScale(10),
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    backgroundColor: "#dbeafe",
-    borderRadius: scale(999),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(7),
-  },
-  inlineActionText: {
-    color: "#0f172a",
-    fontSize: moderateScale(11),
-    fontWeight: "800",
-  },
-  typingBubble: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-  },
-  typingText: {
-    color: "#475569",
-    fontSize: moderateScale(12),
-    fontWeight: "600",
-  },
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: scale(10),
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(10),
-    paddingBottom: verticalScale(18),
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-    backgroundColor: "#ffffff",
-  },
-  input: {
-    flex: 1,
-    minHeight: verticalScale(50),
-    maxHeight: verticalScale(110),
-    backgroundColor: "#f8fafc",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: scale(18),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(12),
-    color: "#0f172a",
-    fontSize: moderateScale(13),
-  },
-  sendButton: {
-    width: scale(48),
-    height: scale(48),
-    borderRadius: scale(16),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1d4ed8",
-  },
-  sendButtonDisabled: {
-    backgroundColor: "#93c5fd",
-  },
-});
+function buildStyles(palette, isLight) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: palette.background,
+    },
+    hero: {
+      paddingHorizontal: scale(18),
+      paddingTop: verticalScale(18),
+      paddingBottom: verticalScale(22),
+    },
+    heroTitle: {
+      color: palette.white,
+      fontSize: moderateScale(26),
+      fontWeight: "900",
+      lineHeight: moderateScale(31),
+    },
+    heroTitleLight: {
+      color: palette.textPrimary,
+    },
+    heroSubtitle: {
+      marginTop: verticalScale(8),
+      color: palette.textSecondary,
+      fontSize: moderateScale(13),
+      lineHeight: moderateScale(19),
+    },
+    heroSubtitleLight: {
+      color: palette.textSecondary,
+    },
+    heroActionCard: {
+      flexDirection: "row",
+      marginTop: verticalScale(16),
+      backgroundColor: palette.overlay,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      borderRadius: scale(18),
+      padding: scale(12),
+      alignItems: "center",
+      gap: scale(12),
+    },
+    heroActionIcon: {
+      width: scale(38),
+      height: scale(38),
+      borderRadius: scale(19),
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: palette.accent,
+    },
+    heroActionCopy: {
+      flex: 1,
+    },
+    heroActionTitle: {
+      color: palette.white,
+      fontSize: moderateScale(14),
+      fontWeight: "800",
+    },
+    heroActionTitleLight: {
+      color: palette.textPrimary,
+    },
+    heroActionText: {
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+      marginTop: verticalScale(2),
+      lineHeight: moderateScale(17),
+    },
+    chatShell: {
+      flex: 1,
+      backgroundColor: palette.background,
+    },
+    topSection: {
+      marginTop: -verticalScale(10),
+      backgroundColor: palette.background,
+      borderTopLeftRadius: scale(26),
+      borderTopRightRadius: scale(26),
+      paddingTop: verticalScale(18),
+    },
+    sectionTitle: {
+      paddingHorizontal: scale(18),
+      fontSize: moderateScale(14),
+      fontWeight: "800",
+      color: palette.textPrimary,
+    },
+    modelSwitchRow: {
+      flexDirection: "row",
+      gap: scale(8),
+      paddingHorizontal: scale(18),
+      paddingTop: verticalScale(10),
+    },
+    modelChip: {
+      borderRadius: scale(999),
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      backgroundColor: palette.card,
+      paddingHorizontal: scale(12),
+      paddingVertical: verticalScale(7),
+    },
+    modelChipActive: {
+      backgroundColor: palette.accentSoft,
+      borderColor: palette.accent,
+    },
+    modelChipText: {
+      color: palette.textMuted,
+      fontSize: moderateScale(11),
+      fontWeight: "700",
+    },
+    modelChipTextActive: {
+      color: palette.accentSoftText,
+    },
+    promptRow: {
+      paddingHorizontal: scale(18),
+      paddingTop: verticalScale(12),
+      paddingBottom: verticalScale(8),
+      gap: scale(10),
+    },
+    promptChip: {
+      maxWidth: scale(240),
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      borderRadius: scale(18),
+      paddingHorizontal: scale(14),
+      paddingVertical: verticalScale(10),
+    },
+    promptChipText: {
+      color: palette.accentSoftText,
+      fontSize: moderateScale(12),
+      fontWeight: "600",
+    },
+    messagesContent: {
+      paddingBottom: verticalScale(14),
+    },
+    messages: {
+      flex: 1,
+    },
+    messageThread: {
+      paddingHorizontal: scale(18),
+      paddingTop: verticalScale(10),
+      paddingBottom: verticalScale(14),
+      gap: verticalScale(12),
+    },
+    messageRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: scale(8),
+    },
+    messageRowBot: {
+      justifyContent: "flex-start",
+    },
+    messageRowUser: {
+      justifyContent: "flex-end",
+    },
+    avatar: {
+      width: scale(32),
+      height: scale(32),
+      borderRadius: scale(16),
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarBot: {
+      backgroundColor: palette.accent,
+    },
+    avatarUser: {
+      backgroundColor: isLight ? palette.textSecondary : palette.cardMuted,
+    },
+    messageBubble: {
+      maxWidth: "82%",
+      borderRadius: scale(18),
+      paddingHorizontal: scale(14),
+      paddingVertical: verticalScale(11),
+    },
+    messageBubbleBot: {
+      backgroundColor: palette.accentSoft,
+      borderWidth: 1,
+      borderColor: palette.accent,
+      borderBottomLeftRadius: scale(6),
+    },
+    messageBubbleUser: {
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.cardBorder,
+      borderBottomRightRadius: scale(6),
+    },
+    messageText: {
+      fontSize: moderateScale(13),
+      lineHeight: moderateScale(19),
+    },
+    messageTextBot: {
+      color: isLight ? palette.textPrimary : palette.accentText,
+    },
+    messageTextUser: {
+      color: palette.textPrimary,
+    },
+    inlineAction: {
+      marginTop: verticalScale(10),
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(6),
+      backgroundColor: palette.cardMuted,
+      borderRadius: scale(999),
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(7),
+    },
+    inlineActionText: {
+      color: palette.textPrimary,
+      fontSize: moderateScale(11),
+      fontWeight: "800",
+    },
+    typingBubble: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+    },
+    typingText: {
+      color: palette.textMuted,
+      fontSize: moderateScale(12),
+      fontWeight: "600",
+    },
+    inputWrap: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: scale(10),
+      paddingHorizontal: scale(18),
+      paddingTop: verticalScale(10),
+      paddingBottom: verticalScale(18),
+      borderTopWidth: 1,
+      borderTopColor: palette.cardBorder,
+      backgroundColor: palette.card,
+    },
+    input: {
+      flex: 1,
+      minHeight: verticalScale(50),
+      maxHeight: verticalScale(110),
+      backgroundColor: palette.input,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      borderRadius: scale(18),
+      paddingHorizontal: scale(14),
+      paddingVertical: verticalScale(12),
+      color: palette.textPrimary,
+      fontSize: moderateScale(13),
+    },
+    sendButton: {
+      width: scale(48),
+      height: scale(48),
+      borderRadius: scale(16),
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: palette.accent,
+    },
+    sendButtonDisabled: {
+      backgroundColor: palette.tabInactive,
+    },
+  });
+}
