@@ -14,6 +14,7 @@ import Learn from "../screens/Learn_Feature/Learn";
 import VirtualMarket from "../screens/VirtualMarket_Feature/VirtualMarket";
 import Consult from "../screens/Consult";
 import Profile from "../screens/Profile";
+import Watchlist from "../screens/Watchlist";
 
 const Tab = createBottomTabNavigator();
 
@@ -106,6 +107,15 @@ export default function TabNavigator({
         component={Consult}
         options={{
           tabBarIcon: ({ color }) => <MessageCircle color={color} size={24} />,
+        }}
+      />
+
+      <Tab.Screen
+        name="WatchlistTab"
+        component={Watchlist}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
         }}
       />
 

@@ -5,6 +5,7 @@ import Login from "../screens/Login";
 import Register from "../screens/Register";
 import PasswordReset from "../screens/PasswordReset";
 import AiInsights from "../screens/AiInsights";
+import AITraderPersonalities from "../screens/AITraderPersonalities";
 import FinBot from "../screens/FinBot";
 import News from "../screens/News";
 import Charting from "../screens/Charting";
@@ -69,6 +70,7 @@ export default function RootNavigator({
           <Stack.Screen name="QuizDetail" component={QuizDetail} />
 
           <Stack.Screen name="AiInsights" component={AiInsights} />
+          <Stack.Screen name="AITraderPersonalities" component={AITraderPersonalities} />
           <Stack.Screen name="FinBot" component={FinBot} />
           <Stack.Screen name="News" component={News} />
           <Stack.Screen name="Charting" component={Charting} />

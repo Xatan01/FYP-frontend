@@ -59,6 +59,17 @@ const getDifficultyTier = (difficulty = "") => {
   return "basic";
 };
 
+const DIFFICULTY_ORDER = {
+  basic: 0,
+  core: 1,
+  mastery: 2,
+};
+
+const getDifficultyRank = (difficulty = "") => {
+  const tier = getDifficultyTier(difficulty);
+  return DIFFICULTY_ORDER[tier] ?? 0;
+};
+
 function createDefaultProgressState() {
   return {
     completedLessonsBySubtopic: {},
@@ -147,6 +158,8 @@ export default function Learn({
           can_unlock: subtopic.can_unlock === true,
           requires_profiling: subtopic.requires_profiling !== false,
           stage: subtopic.stage ?? null,
+          starting_difficulty: subtopic.starting_difficulty ?? null,
+          current_difficulty: subtopic.current_difficulty ?? null,
           is_completed: subtopic.is_completed === true,
           subtopic_summary: subtopic?.subtopic_summary?.summary_content ?? null,
           lessons: contents.map((content, cIdx) => ({
@@ -273,10 +286,33 @@ export default function Learn({
       const canUnlock = unit.can_unlock === true;
       const requiresProfiling = unit.requires_profiling !== false;
       const isCompleted = unit.is_completed === true;
+      const baseDifficultyRank = getDifficultyRank(
+        unit.current_difficulty ?? unit.starting_difficulty ?? "basic"
+      );
+      let unlockedDifficultyRank = baseDifficultyRank;
 
-      let foundCurrentStep = false;
+      for (let rank = baseDifficultyRank; rank < DIFFICULTY_ORDER.mastery; rank += 1) {
+        const lessonsAtRank = lessons.filter(
+          (lesson) => getDifficultyRank(lesson.difficulty) === rank
+        );
+        if (!lessonsAtRank.length) {
+          unlockedDifficultyRank = Math.max(unlockedDifficultyRank, rank + 1);
+          continue;
+        }
+
+        const allRankLessonsCompleted = lessonsAtRank.every((lesson) =>
+          completedLessonIds.has(String(lesson.id))
+        );
+        if (!allRankLessonsCompleted) {
+          break;
+        }
+
+        unlockedDifficultyRank = Math.max(unlockedDifficultyRank, rank + 1);
+      }
+
       const lessonsWithStatus = lessons.map((lesson) => {
         const lessonId = String(lesson.id);
+        const lessonDifficultyRank = getDifficultyRank(lesson.difficulty);
 
         if (!isUnlocked) {
           return { ...lesson, status: "locked" };
@@ -286,8 +322,7 @@ export default function Learn({
           return { ...lesson, status: "completed" };
         }
 
-        if (!foundCurrentStep) {
-          foundCurrentStep = true;
+        if (lessonDifficultyRank <= unlockedDifficultyRank) {
           return { ...lesson, status: "unlocked" };
         }
 
@@ -592,11 +627,15 @@ export default function Learn({
                           {!unit.isUnlocked ? (
                             <View style={styles.lockedPanel}>
                               <Lock size={18} color="#94a3b8" />
-                              <Text style={styles.lockedTitle}>Subtopic locked</Text>
+                              <Text style={styles.lockedTitle}>
+                                {unit.canUnlock && unit.requiresProfiling
+                                  ? "Profiling required"
+                                  : "Subtopic locked"}
+                              </Text>
                               <Text style={styles.lockedSubtitle}>
                                 {unit.canUnlock
                                   ? unit.requiresProfiling
-                                    ? "Take the profiling quiz to unlock this subtopic."
+                                    ? "Take the profiling quiz now to unlock this subtopic."
                                     : "Unlock this subtopic to reveal its steps."
                                   : "Complete the previous subtopic first."}
                               </Text>
