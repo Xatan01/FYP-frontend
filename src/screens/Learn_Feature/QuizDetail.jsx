@@ -7,7 +7,12 @@ import {
   submitQuizBySubtopicAndDifficulty,
 } from "../../api/learning";
 import QuizContent from "./quiz_components/QuizContent";
-import { formatSubtopicName, normalizeQuestion } from "./quiz_components/quizUtils";
+import {
+  formatSubtopicName,
+  isQuestionAnswered,
+  normalizeQuestion,
+} from "./quiz_components/quizUtils";
+import { buildQuizReviewEntry } from "./quiz_components/quizReviewUtils";
 
 export default function QuizDetail({ route, navigation }) {
   const {
@@ -17,9 +22,11 @@ export default function QuizDetail({ route, navigation }) {
     subtopicId,
     difficulty = "basic",
     lessonTitle,
+    unitLabel,
     quizMode = "lesson",
     onProfilingComplete,
     onQuizPassed,
+    onQuizSubmitted,
   } = route.params || {};
 
   const [loading, setLoading] = useState(true);
@@ -82,7 +89,13 @@ export default function QuizDetail({ route, navigation }) {
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentIndex] || null;
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;
-  const answeredCount = Object.keys(answers).length;
+  const answeredCount = useMemo(
+    () =>
+      questions.reduce((count, question) => {
+        return count + (isQuestionAnswered(question, answers[question.id]) ? 1 : 0);
+      }, 0),
+    [answers, questions]
+  );
   const progress = totalQuestions > 0 ? ((currentIndex + 1) / totalQuestions) * 100 : 0;
 
   const handleChangeAnswer = (value) => {
@@ -108,6 +121,22 @@ export default function QuizDetail({ route, navigation }) {
         ? await submitProfilingQuiz(subtopicId, payload)
         : await submitQuizBySubtopicAndDifficulty(subtopicId, difficulty, payload);
 
+      if (!isProfilingQuiz && typeof onQuizSubmitted === "function") {
+        const reviewEntry = buildQuizReviewEntry({
+          unitLabel,
+          topicId,
+          topicName,
+          subtopicId,
+          subtopicName,
+          difficulty,
+          lessonTitle,
+          questions,
+          answers: payload,
+          submitResult: result,
+        });
+        await Promise.resolve(onQuizSubmitted(reviewEntry));
+      }
+
       if (!isProfilingQuiz && result?.passed && typeof onQuizPassed === "function") {
         await Promise.resolve(onQuizPassed(result));
       }
@@ -124,10 +153,17 @@ export default function QuizDetail({ route, navigation }) {
     answeredCount,
     difficulty,
     isProfilingQuiz,
+    lessonTitle,
     onQuizPassed,
+    onQuizSubmitted,
+    questions,
     subtopicId,
     submitting,
+    subtopicName,
+    topicId,
+    topicName,
     totalQuestions,
+    unitLabel,
   ]);
 
   const goNext = async () => {

@@ -21,6 +21,7 @@ import Portfolio from "../screens/Portfolio";
 import VirtualMarket from "../screens/VirtualMarket_Feature/VirtualMarket";
 import LessonDetail from "../screens/Learn_Feature/LessonDetail";
 import QuizDetail from "../screens/Learn_Feature/QuizDetail";
+import QuizExplanationDetail from "../screens/Learn_Feature/QuizExplanationDetail";
 import { useAuth } from "../context/AuthContext";
 import LoadingState from "../components/LoadingState";
 
@@ -68,6 +69,7 @@ export default function RootNavigator({
             )}
           </Stack.Screen>
           <Stack.Screen name="QuizDetail" component={QuizDetail} />
+          <Stack.Screen name="QuizExplanationDetail" component={QuizExplanationDetail} />
 
           <Stack.Screen name="AiInsights" component={AiInsights} />
           <Stack.Screen name="AITraderPersonalities" component={AITraderPersonalities} />

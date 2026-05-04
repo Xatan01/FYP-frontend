@@ -98,8 +98,8 @@ export default function QuizContent({
             {!isProfilingQuiz && submitResult ? (
               <>
                 <Text style={styles.questionSummary}>
-                  Score: {submitResult.total_correct}/{submitResult.total_questions} ·{" "}
-                  {submitResult.passed ? "Passed" : "Not passed"} · Points: {submitResult.points_awarded}
+                  Score: {submitResult.total_correct}/{submitResult.total_questions} -{" "}
+                  {submitResult.passed ? "Passed" : "Not passed"} - Points: {submitResult.points_awarded}
                 </Text>
                 {!submitResult.passed ? (
                   <Text style={styles.questionSummary}>
@@ -118,9 +118,9 @@ export default function QuizContent({
               </Text>
             ) : null}
             <View style={styles.footerActions}>
-              <TouchableOpacity style={[styles.navBtn, styles.secondaryBtn]} onPress={onReviewAnswers}>
+              {/* <TouchableOpacity style={[styles.navBtn, styles.secondaryBtn]} onPress={onReviewAnswers}>
                 <Text style={styles.secondaryBtnText}>Review answers</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               {isProfilingQuiz ? (
                 <TouchableOpacity style={[styles.navBtn, styles.primaryBtn]} onPress={onFinishAndContinue}>
                   <Text style={styles.primaryBtnText}>Unlock subtopic</Text>

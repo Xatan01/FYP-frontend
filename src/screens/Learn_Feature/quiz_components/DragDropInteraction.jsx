@@ -2,6 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { moderateScale, scale, verticalScale } from "../../../styles/responsive";
 import { useAppTheme } from "../../../context/ThemeContext";
+import {
+  formatDragDropAnswerPairs,
+  getDragDropOptionBank,
+  getDragDropSlots,
+  isDragDropAnswerComplete,
+} from "./dragDropUtils";
 
 const DRAG_ACTIVATION_DISTANCE = 1;
 const DROP_HIT_SLOP = scale(18);
@@ -9,12 +15,18 @@ const DROP_HIT_SLOP = scale(18);
 export default function DragDropInteraction({ question, value, onChange, onDragStateChange }) {
   const { palette } = useAppTheme();
   const styles = useMemo(() => buildStyles(palette), [palette]);
-  const pairs = Array.isArray(question?.dragDrop?.pairs) ? question.dragDrop.pairs : [];
-  const rightOptions = useMemo(
-    () => [...new Set(pairs.map((pair) => String(pair.right ?? "")))].filter(Boolean),
-    [pairs]
-  );
+  const slots = useMemo(() => getDragDropSlots(question), [question]);
+  const rightOptions = useMemo(() => getDragDropOptionBank(question), [question]);
   const selected = value && typeof value === "object" ? value : {};
+  const answerPairs = useMemo(() => formatDragDropAnswerPairs(question, selected), [question, selected]);
+  const completedCount = useMemo(
+    () => answerPairs.filter((pair) => pair.isFilled).length,
+    [answerPairs]
+  );
+  const allFilled = useMemo(
+    () => isDragDropAnswerComplete(question, selected),
+    [question, selected]
+  );
   const selectedRef = useRef(selected);
   const panMapRef = useRef({});
   const slotRefs = useRef({});
@@ -36,10 +48,6 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
     };
   }, [onDragStateChange]);
 
-  const getLeftLabel = useCallback((pair, pairIndex) => {
-    return String(pair?.left ?? `Item ${pairIndex + 1}`);
-  }, []);
-
   const getPan = useCallback((option) => {
     if (!panMapRef.current[option]) {
       panMapRef.current[option] = new Animated.ValueXY({ x: 0, y: 0 });
@@ -47,42 +55,41 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
     return panMapRef.current[option];
   }, []);
 
-  const measureSlot = useCallback((leftLabel) => {
-    const ref = slotRefs.current[leftLabel];
+  const measureSlot = useCallback((slotKey) => {
+    const ref = slotRefs.current[slotKey];
     if (!ref || typeof ref.measureInWindow !== "function") return;
 
     ref.measureInWindow((x, y, width, height) => {
-      slotBoundsRef.current[leftLabel] = { x, y, width, height };
+      slotBoundsRef.current[slotKey] = { x, y, width, height };
     });
   }, []);
 
   const measureAllSlots = useCallback(() => {
-    pairs.forEach((pair, pairIndex) => {
-      const leftLabel = getLeftLabel(pair, pairIndex);
-      measureSlot(leftLabel);
+    slots.forEach((slot) => {
+      measureSlot(slot.slotKey);
     });
-  }, [getLeftLabel, measureSlot, pairs]);
+  }, [measureSlot, slots]);
 
   const findDropTarget = useCallback((pageX, pageY) => {
-    for (const [leftLabel, bounds] of Object.entries(slotBoundsRef.current)) {
+    for (const [slotKey, bounds] of Object.entries(slotBoundsRef.current)) {
       if (
         pageX >= bounds.x - DROP_HIT_SLOP &&
         pageX <= bounds.x + bounds.width + DROP_HIT_SLOP &&
         pageY >= bounds.y - DROP_HIT_SLOP &&
         pageY <= bounds.y + bounds.height + DROP_HIT_SLOP
       ) {
-        return leftLabel;
+        return slotKey;
       }
     }
     return "";
   }, []);
 
   const setSlotStyle = useCallback(
-    (leftLabel, isHover) => {
-      const ref = slotRefs.current[leftLabel];
+    (slotKey, isHover) => {
+      const ref = slotRefs.current[slotKey];
       if (!ref || typeof ref.setNativeProps !== "function") return;
 
-      const isFilled = Boolean(selectedRef.current[leftLabel]);
+      const isFilled = Boolean(selectedRef.current[slotKey]);
       ref.setNativeProps({
         style: [styles.dropZone, isFilled && styles.dropZoneFilled, isHover && styles.dropZoneHover],
       });
@@ -113,27 +120,27 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
   );
 
   const assignOption = useCallback(
-    (option, leftLabel) => {
+    (option, slotKey) => {
       const current = selectedRef.current;
       const next = { ...current };
 
-      Object.keys(next).forEach((leftKey) => {
-        if (next[leftKey] === option) {
-          delete next[leftKey];
+      Object.keys(next).forEach((existingSlotKey) => {
+        if (next[existingSlotKey] === option) {
+          delete next[existingSlotKey];
         }
       });
 
-      next[leftLabel] = option;
+      next[slotKey] = option;
       onChange(next);
     },
     [onChange]
   );
 
   const clearSlot = useCallback(
-    (leftLabel) => {
-      if (!selected[leftLabel]) return;
+    (slotKey) => {
+      if (!selected[slotKey]) return;
       const next = { ...selected };
-      delete next[leftLabel];
+      delete next[slotKey];
       onChange(next);
     },
     [onChange, selected]
@@ -159,17 +166,7 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
     [clearHoverTarget, getPan, onDragStateChange]
   );
 
-  const assignedByOption = useMemo(() => {
-    const map = {};
-    Object.entries(selected).forEach(([leftLabel, option]) => {
-      if (typeof option === "string" && option.trim()) {
-        map[option] = leftLabel;
-      }
-    });
-    return map;
-  }, [selected]);
-
-  if (pairs.length === 0) {
+  if (slots.length === 0) {
     return <Text style={styles.helperText}>No drag-drop pairs available.</Text>;
   }
 
@@ -179,31 +176,31 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
         <Text style={styles.helperText}>{question.dragDrop.prompt}</Text>
       ) : null}
       <View style={styles.dropZoneWrap}>
-        {pairs.map((pair, pairIndex) => {
-          const leftLabel = getLeftLabel(pair, pairIndex);
-          const matchedValue = selected[leftLabel];
+        {answerPairs.map(({ slotKey, leftLabel, value: matchedValue }, pairIndex) => {
 
           return (
             <View
-              key={`target-${leftLabel}-${pairIndex}`}
+              key={`target-${slotKey}-${pairIndex}`}
               ref={(node) => {
-                if (node) slotRefs.current[leftLabel] = node;
+                if (node) slotRefs.current[slotKey] = node;
               }}
-              onLayout={() => measureSlot(leftLabel)}
+              onLayout={() => measureSlot(slotKey)}
               style={[
                 styles.dropZone,
                 matchedValue && styles.dropZoneFilled,
               ]}
             >
-              <Text style={styles.dropZoneLabel}>{leftLabel}</Text>
+              <View style={styles.dropZoneHeader}>
+                <Text style={styles.dropZoneLabel}>{leftLabel}</Text>
+              </View>
               <View style={styles.dropZoneAnswerRow}>
                 <Text style={[styles.dropZoneAnswer, !matchedValue && styles.dropZoneAnswerPlaceholder]}>
-                  {matchedValue || "Drop answer here"}
+                  {matchedValue || "Drop the matching definition here"}
                 </Text>
                 {matchedValue ? (
                   <TouchableOpacity
                     style={styles.clearBtn}
-                    onPress={() => clearSlot(leftLabel)}
+                    onPress={() => clearSlot(slotKey)}
                     activeOpacity={0.85}
                   >
                     <Text style={styles.clearBtnText}>Clear</Text>
@@ -220,7 +217,6 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
         <View style={styles.optionChipWrap}>
           {rightOptions.map((option) => {
             const pan = getPan(option);
-            const assignedLeft = assignedByOption[option];
             const isDragging = draggingOption === option;
             const isOtherDragging = draggingOption && draggingOption !== option;
 
@@ -282,7 +278,7 @@ export default function DragDropInteraction({ question, value, onChange, onDragS
                 {...panResponder.panHandlers}
                 style={[
                   styles.optionChip,
-                  assignedLeft && styles.optionChipAssigned,
+                  Object.values(selected).includes(option) && styles.optionChipAssigned,
                   isDragging && styles.optionChipDragging,
                   { transform: pan.getTranslateTransform() },
                 ]}
@@ -307,6 +303,47 @@ function buildStyles(palette) {
   dragWrap: {
     gap: verticalScale(10),
   },
+  summaryCard: {
+    backgroundColor: palette.backgroundAlt,
+    borderWidth: 1,
+    borderColor: palette.cardBorder,
+    borderRadius: 14,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: scale(10),
+  },
+  summaryTitle: {
+    color: palette.textPrimary,
+    fontSize: moderateScale(13),
+    fontWeight: "800",
+  },
+  summaryText: {
+    color: palette.textMuted,
+    fontSize: moderateScale(11),
+    lineHeight: moderateScale(16),
+    marginTop: verticalScale(3),
+    maxWidth: scale(180),
+  },
+  summaryBadge: {
+    borderRadius: 999,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(6),
+    backgroundColor: palette.input,
+    borderWidth: 1,
+    borderColor: palette.inputBorder,
+  },
+  summaryBadgeComplete: {
+    backgroundColor: "#14532d",
+    borderColor: "#22c55e",
+  },
+  summaryBadgeText: {
+    color: palette.textPrimary,
+    fontSize: moderateScale(11),
+    fontWeight: "800",
+  },
   dropZoneWrap: {
     gap: verticalScale(8),
   },
@@ -319,6 +356,9 @@ function buildStyles(palette) {
     paddingVertical: verticalScale(10),
     gap: verticalScale(6),
   },
+  dropZoneHeader: {
+    gap: verticalScale(2),
+  },
   dropZoneHover: {
     borderColor: "#38bdf8",
     backgroundColor: "#082f49",
@@ -329,7 +369,13 @@ function buildStyles(palette) {
   },
   dropZoneLabel: {
     color: "#fde68a",
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(11),
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  dropZoneTerm: {
+    color: palette.textPrimary,
+    fontSize: moderateScale(13),
     fontWeight: "700",
   },
   dropZoneAnswerRow: {
@@ -343,6 +389,7 @@ function buildStyles(palette) {
     fontSize: moderateScale(13),
     fontWeight: "700",
     flex: 1,
+    lineHeight: moderateScale(18),
   },
   dropZoneAnswerPlaceholder: {
     color: palette.textMuted,
@@ -407,6 +454,7 @@ function buildStyles(palette) {
     color: palette.textPrimary,
     fontSize: moderateScale(12),
     fontWeight: "700",
+    flexShrink: 1,
   },
   optionChipMeta: {
     color: "#93c5fd",

@@ -29,6 +29,14 @@ import usePersistedState from "../../hooks/usePersistedState";
 import usePulseAnimation from "../../hooks/usePulseAnimation";
 import { useAppTheme } from "../../context/ThemeContext";
 import LoadingState from "../../components/LoadingState";
+import {
+  buildQuizReviewKey,
+  createDefaultQuizReviewState,
+  formatReviewDifficulty,
+  isAnswerReviewEnabled,
+  normalizeQuizReviewState,
+  QUIZ_REVIEW_STORAGE_KEY,
+} from "./quiz_components/quizReviewUtils";
 
 const TOPIC_NAME_MAP = {
   1: "Introduction to Stocks",
@@ -105,6 +113,13 @@ function cloneProgressState(value) {
   };
 }
 
+function cloneQuizReviewState(value) {
+  const normalized = normalizeQuizReviewState(value);
+  return {
+    latestByKey: { ...normalized.latestByKey },
+  };
+}
+
 export default function Learn({
   learningPath = [],
   userData = {},
@@ -131,6 +146,10 @@ export default function Learn({
     loading: progressLoading,
     error: progressError,
   } = usePersistedState(LESSON_COMPLETION_KEY, createDefaultProgressState());
+  const {
+    value: quizReviewState,
+    setValue: setQuizReviewState,
+  } = usePersistedState(QUIZ_REVIEW_STORAGE_KEY, createDefaultQuizReviewState());
 
   const loadTopicUnits = useCallback(async (topicId) => {
     const topicKey = String(topicId);
@@ -253,6 +272,10 @@ export default function Learn({
     () => normalizeProgressState(progressState),
     [progressState]
   );
+  const normalizedQuizReviewState = useMemo(
+    () => normalizeQuizReviewState(quizReviewState),
+    [quizReviewState]
+  );
 
   const sourcePath = useMemo(() => {
     const rawPath = Array.isArray(learningPath) && learningPath.length > 0 ? learningPath : backendPath;
@@ -362,6 +385,16 @@ export default function Learn({
     },
     [setProgressState]
   );
+  const updateQuizReviewState = useCallback(
+    (mutator) => {
+      setQuizReviewState((prevState) => {
+        const draft = cloneQuizReviewState(prevState);
+        const updated = mutator(draft) || draft;
+        return normalizeQuizReviewState(updated);
+      });
+    },
+    [setQuizReviewState]
+  );
 
   const completeLesson = useCallback(
     (unit, lesson) => {
@@ -380,7 +413,9 @@ export default function Learn({
   );
 
   const getNodeStyle = (status, type) => {
-    if (type === "summary") return styles.nodeSummary;
+    if (type === "summary") {
+      return status === "locked" ? styles.nodeLocked : styles.nodeSummary;
+    }
     switch (status) {
       case "completed":
         return styles.nodeCompleted;
@@ -392,7 +427,13 @@ export default function Learn({
   };
 
   const getIcon = (status, type, difficulty) => {
-    if (type === "summary") return <Award size={28} color="#fff" />;
+    if (type === "summary") {
+      return status === "locked" ? (
+        <Lock size={26} color="#94a3b8" />
+      ) : (
+        <Award size={28} color="#fff" />
+      );
+    }
     if (type === "milestone") return <Award size={28} color="#fff" />;
     if (status === "locked") return <Lock size={26} color="#94a3b8" />;
 
@@ -458,9 +499,17 @@ export default function Learn({
       topicName: TOPIC_NAME_MAP[unit.topic_id] ?? unit.topic_name,
       subtopicId: unit.subtopic_id,
       subtopicName: formatSubtopicName(unit.subtopic_name),
+      unitLabel: unit.unit,
       difficulty: String(lesson.difficulty ?? "basic").trim().toLowerCase(),
       lessonTitle: lesson.title,
       stepIndex: index + 1,
+      onQuizSubmitted: async (reviewEntry) => {
+        updateQuizReviewState((draft) => {
+          const reviewKey = buildQuizReviewKey(unit.subtopic_id, lesson.difficulty);
+          draft.latestByKey[reviewKey] = reviewEntry;
+          return draft;
+        });
+      },
       onQuizPassed: async (result) => {
         completeLesson(unit, lesson);
         if (typeof onCompleteLesson === "function") {
@@ -479,6 +528,27 @@ export default function Learn({
   const handleAnswerExplanationPress = (unit, lesson) => {
     if (lesson.status === "locked" || lesson.type === "summary") return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (!isAnswerReviewEnabled(unit.unit, lesson.difficulty)) {
+      Alert.alert(
+        "Answer review not available",
+        "This answer review is currently available only for unit 1.1 basic, core, and advanced."
+      );
+      return;
+    }
+
+    const reviewKey = buildQuizReviewKey(unit.subtopic_id, lesson.difficulty);
+    const review = normalizedQuizReviewState.latestByKey[reviewKey];
+
+    if (!review) {
+      Alert.alert(
+        "Take the quiz first",
+        `Complete the ${formatReviewDifficulty(lesson.difficulty)} quiz for unit 1.1 first so this answer review can show your previous questions and answers.`
+      );
+      return;
+    }
+
+    navigation.navigate("QuizExplanationDetail", { review });
   };
 
   const handleUnlockPress = (unit) => {
@@ -595,17 +665,15 @@ export default function Learn({
                     </View>
                   ) : (
                     topicUnits.map((unit) => {
-                      const pathItems = unit.summaryUnlocked
-                        ? [
-                            ...unit.visibleLessons,
-                            {
-                              id: `summary-${unit.subtopic_id}`,
-                              title: "Summary",
-                              status: "unlocked",
-                              type: "summary",
-                            },
-                          ]
-                        : unit.visibleLessons;
+                      const pathItems = [
+                        ...unit.visibleLessons,
+                        {
+                          id: `summary-${unit.subtopic_id}`,
+                          title: "Subtopic Summary",
+                          status: unit.summaryUnlocked ? "unlocked" : "locked",
+                          type: "summary",
+                        },
+                      ];
 
                       return (
                         <View key={unit.unit} style={styles.unitContainer}>

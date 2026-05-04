@@ -1,3 +1,10 @@
+import {
+  getDragDropLeftLabel,
+  getDragDropRightValue,
+  getDragDropSlotKey,
+  isDragDropAnswerComplete,
+} from "./dragDropUtils";
+
 export function formatSubtopicName(name = "") {
   const cleaned = String(name).replace(/_/g, " ").trim();
   if (!cleaned) return "";
@@ -8,6 +15,29 @@ export function formatDifficulty(difficulty = "") {
   const normalized = String(difficulty).replace(/_/g, " ").trim().toLowerCase();
   if (!normalized) return "Basic";
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+function sanitizeQuestionText(value = "") {
+  return String(value ?? "")
+    .replace(/^\s*question\s*\d+\s*[:.-]?\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isGeneratedQuestionLabel(value = "", questionId = "", index = 0) {
+  const text = String(value ?? "").trim();
+  if (!text) return true;
+
+  if (/^question\s*\d+\s*$/i.test(text)) {
+    return true;
+  }
+
+  const idText = String(questionId ?? "").trim();
+  if (idText && text.toLowerCase() === idText.toLowerCase()) {
+    return true;
+  }
+
+  return text.toLowerCase() === `question ${index + 1}`;
 }
 
 function normalizeType(type = "") {
@@ -68,6 +98,22 @@ function parseOptions(rawOptions) {
   });
 }
 
+export function isQuestionAnswered(question, answer) {
+  if (!question) return false;
+
+  if (question.type === "drag_drop") {
+    return isDragDropAnswerComplete(question, answer);
+  }
+
+  if (typeof answer === "boolean") return true;
+  if (typeof answer === "string") return answer.trim().length > 0;
+  if (Array.isArray(answer)) return answer.length > 0;
+
+  return answer !== null && answer !== undefined;
+}
+
+export { getDragDropLeftLabel, getDragDropRightValue, getDragDropSlotKey };
+
 export function normalizeQuestion(raw, index) {
   const questionJson =
     raw?.question_json && typeof raw.question_json === "object" ? raw.question_json : {};
@@ -77,18 +123,22 @@ export function normalizeQuestion(raw, index) {
     questionJson.drag_drop && typeof questionJson.drag_drop === "object"
       ? questionJson.drag_drop
       : { pairs: [] };
+  const rawTitle = typeof raw?.title === "string" ? raw.title : "";
+  const rawPrompt =
+    (typeof questionJson.question === "string" && questionJson.question.trim()) ||
+    raw?.summary ||
+    "";
+  const questionId = String(raw?.question_id ?? `q-${index}`);
 
   return {
-    id: String(raw?.question_id ?? `q-${index}`),
+    id: questionId,
     type: qType,
-    title: raw?.title || `Question ${index + 1}`,
-    prompt:
-      (typeof questionJson.question === "string" && questionJson.question.trim()) ||
-      raw?.summary ||
-      "",
+    title: isGeneratedQuestionLabel(rawTitle, questionId, index) ? "" : sanitizeQuestionText(rawTitle),
+    prompt: sanitizeQuestionText(rawPrompt),
     scenario:
       typeof questionJson.scenario === "string" ? questionJson.scenario.trim() : "",
     options,
     dragDrop,
+    questionJson,
   };
 }
