@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -14,7 +14,6 @@ import { moderateScale, scale, verticalScale } from "../styles/responsive";
 import { useAppTheme } from "../context/ThemeContext";
 import LoadingState from "../components/LoadingState";
 import { fetchAITraderSignals } from "../api/aiTrader";
-import { searchMarketSymbols } from "../api/market";
 
 const DEFAULT_TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"];
 
@@ -77,8 +76,6 @@ export default function AITraderPersonalities() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const searchSeq = useRef(0);
 
   const loadSignals = useCallback(async (ticker, { quiet = false } = {}) => {
     const cleanTicker = String(ticker || "").trim().toUpperCase();
@@ -93,7 +90,6 @@ export default function AITraderPersonalities() {
       setSignals(result);
       setActiveSymbol(cleanTicker);
       setSymbolQuery(cleanTicker);
-      setSearchResults([]);
       setSearching(false);
     } catch (err) {
       setError(err?.message || "Failed to load AI trader signals.");
@@ -108,35 +104,15 @@ export default function AITraderPersonalities() {
   }, [loadSignals]);
 
   useEffect(() => {
-    const query = symbolQuery.trim();
-    const requestId = searchSeq.current + 1;
-    searchSeq.current = requestId;
-
-    if (query.length < 2) {
-      setSearchResults([]);
-      setSearching(false);
-      return undefined;
+    const cleanQuery = symbolQuery.trim().toUpperCase();
+    if (cleanQuery.length >= 2 && cleanQuery !== activeSymbol) {
+      setSearching(true);
+      const timeout = setTimeout(() => setSearching(false), 180);
+      return () => clearTimeout(timeout);
     }
 
-    const timeout = setTimeout(async () => {
-      try {
-        setSearching(true);
-        const result = await searchMarketSymbols(query, 6);
-        if (requestId !== searchSeq.current) return;
-        const nextResults = Array.isArray(result?.results) ? result.results : [];
-        setSearchResults(nextResults);
-      } catch {
-        if (requestId === searchSeq.current) {
-          setSearchResults([]);
-        }
-      } finally {
-        if (requestId === searchSeq.current) {
-          setSearching(false);
-        }
-      }
-    }, 250);
-
-    return () => clearTimeout(timeout);
+    setSearching(false);
+    return undefined;
   }, [symbolQuery]);
 
   const handleSubmit = useCallback(() => {
@@ -203,31 +179,16 @@ export default function AITraderPersonalities() {
                   style={[styles.tickerChip, active && styles.tickerChipActive]}
                   onPress={() => loadSignals(ticker)}
                 >
-                  <Text style={[styles.tickerChipText, active && styles.tickerChipTextActive]}>{ticker}</Text>
+                  <Text style={[styles.tickerChipText, active && styles.tickerChipTextActive]}>
+                    {ticker}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          {searching ? <Text style={styles.helperText}>Searching symbols...</Text> : null}
-          {!searching && searchResults.length ? (
-            <View style={styles.searchResults}>
-              {searchResults.map((item) => {
-                const symbol = String(item?.symbol || "").toUpperCase();
-                return (
-                  <TouchableOpacity
-                    key={`${symbol}-${item?.name || ""}`}
-                    style={styles.searchResultItem}
-                    onPress={() => loadSignals(symbol)}
-                  >
-                    <Text style={styles.searchResultSymbol}>{symbol}</Text>
-                    <Text style={styles.searchResultName} numberOfLines={1}>
-                      {item?.name || symbol}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          {searching ? (
+            <Text style={styles.helperText}>Type a ticker manually or use the fast chips.</Text>
           ) : null}
         </View>
 
@@ -519,29 +480,6 @@ function buildStyles(palette, isLight) {
     },
     helperText: {
       color: palette.textMuted,
-      fontSize: moderateScale(12),
-    },
-    searchResults: {
-      borderTopWidth: 1,
-      borderTopColor: palette.cardBorder,
-      paddingTop: verticalScale(8),
-      gap: verticalScale(8),
-    },
-    searchResultItem: {
-      backgroundColor: palette.cardMuted,
-      borderWidth: 1,
-      borderColor: palette.cardBorder,
-      borderRadius: scale(14),
-      padding: scale(12),
-    },
-    searchResultSymbol: {
-      color: palette.textPrimary,
-      fontSize: moderateScale(13),
-      fontWeight: "800",
-    },
-    searchResultName: {
-      marginTop: verticalScale(3),
-      color: palette.textSecondary,
       fontSize: moderateScale(12),
     },
     loadingCard: {
