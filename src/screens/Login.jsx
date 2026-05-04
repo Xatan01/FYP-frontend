@@ -59,8 +59,21 @@ export default function Login({ navigation, route }) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <View style={styles.card}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue learning and trading.</Text>
+          <View style={styles.brandWrap}>
+            <LinearGradient colors={["#1d4ed8", "#38bdf8"]} style={styles.logoBubble}>
+              <View style={styles.logoCore}>
+                <View style={styles.logoBarRow}>
+                  <View style={[styles.logoBar, styles.logoBarShort]} />
+                  <View style={[styles.logoBar, styles.logoBarMid]} />
+                  <View style={[styles.logoBar, styles.logoBarTall]} />
+                </View>
+                <View style={styles.logoSparkLine} />
+                <View style={styles.logoSparkDot} />
+              </View>
+            </LinearGradient>
+            <Text style={styles.title}>StockED</Text>
+            <Text style={styles.subtitle}>Sign in to continue learning and trading.</Text>
+          </View>
 
           <View style={styles.inputGroup}>
             <Mail size={18} color="#94a3b8" />
@@ -140,16 +153,85 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: scale(16),
   },
+  brandWrap: {
+    alignItems: "center",
+    marginBottom: verticalScale(20),
+  },
+  logoBubble: {
+    width: scale(78),
+    height: scale(78),
+    borderRadius: scale(39),
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: verticalScale(12),
+    shadowColor: "#38bdf8",
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  logoCore: {
+    position: "relative",
+    width: scale(42),
+    height: scale(42),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoBarRow: {
+    position: "absolute",
+    bottom: scale(6),
+    left: scale(2),
+    right: scale(8),
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  logoBar: {
+    width: scale(8),
+    borderRadius: 999,
+    backgroundColor: "#eff6ff",
+  },
+  logoBarShort: {
+    height: scale(12),
+    opacity: 0.9,
+  },
+  logoBarMid: {
+    height: scale(18),
+  },
+  logoBarTall: {
+    height: scale(26),
+  },
+  logoSparkLine: {
+    position: "absolute",
+    width: scale(28),
+    height: scale(4),
+    borderRadius: 999,
+    backgroundColor: "#fef08a",
+    top: scale(13),
+    left: scale(10),
+    transform: [{ rotate: "-28deg" }],
+  },
+  logoSparkDot: {
+    position: "absolute",
+    width: scale(8),
+    height: scale(8),
+    borderRadius: 999,
+    backgroundColor: "#fef08a",
+    top: scale(6),
+    right: scale(5),
+    borderWidth: 2,
+    borderColor: "#dbeafe",
+  },
   title: {
-    fontSize: moderateScale(26),
-    fontWeight: "700",
+    fontSize: moderateScale(28),
+    fontWeight: "800",
     color: "#e2e8f0",
     marginBottom: verticalScale(6),
+    letterSpacing: 0.4,
   },
   subtitle: {
     fontSize: moderateScale(13),
     color: "#94a3b8",
-    marginBottom: verticalScale(20),
+    textAlign: "center",
   },
   inputGroup: {
     flexDirection: "row",
