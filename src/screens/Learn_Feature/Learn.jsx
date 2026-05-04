@@ -312,41 +312,25 @@ export default function Learn({
       const baseDifficultyRank = getDifficultyRank(
         unit.current_difficulty ?? unit.starting_difficulty ?? "basic"
       );
-      let unlockedDifficultyRank = baseDifficultyRank;
-
-      for (let rank = baseDifficultyRank; rank < DIFFICULTY_ORDER.mastery; rank += 1) {
-        const lessonsAtRank = lessons.filter(
-          (lesson) => getDifficultyRank(lesson.difficulty) === rank
-        );
-        if (!lessonsAtRank.length) {
-          unlockedDifficultyRank = Math.max(unlockedDifficultyRank, rank + 1);
-          continue;
-        }
-
-        const allRankLessonsCompleted = lessonsAtRank.every((lesson) =>
-          completedLessonIds.has(String(lesson.id))
-        );
-        if (!allRankLessonsCompleted) {
-          break;
-        }
-
-        unlockedDifficultyRank = Math.max(unlockedDifficultyRank, rank + 1);
-      }
 
       const lessonsWithStatus = lessons.map((lesson) => {
-        const lessonId = String(lesson.id);
         const lessonDifficultyRank = getDifficultyRank(lesson.difficulty);
+        const isAutoCompletedFromAssignedDifficulty =
+          isUnlocked && lessonDifficultyRank < baseDifficultyRank;
 
         if (!isUnlocked) {
           return { ...lesson, status: "locked" };
         }
 
-        if (isCompleted || completedLessonIds.has(lessonId)) {
+        if (isCompleted || isAutoCompletedFromAssignedDifficulty) {
           return { ...lesson, status: "completed" };
         }
 
-        if (lessonDifficultyRank <= unlockedDifficultyRank) {
-          return { ...lesson, status: "unlocked" };
+        if (lessonDifficultyRank === baseDifficultyRank) {
+          return {
+            ...lesson,
+            status: "unlocked",
+          };
         }
 
         return { ...lesson, status: "locked" };
@@ -370,7 +354,7 @@ export default function Learn({
         unitProgress,
         lessons: lessonsWithStatus,
         visibleLessons,
-        summaryUnlocked: isUnlocked && (isCompleted || allLessonsCompleted),
+        summaryUnlocked: isUnlocked && isCompleted,
       };
     });
   }, [sourcePath, normalizedProgressState]);
@@ -521,6 +505,7 @@ export default function Learn({
             })
           );
         }
+        await loadTopicUnits(unit.topic_id);
       },
     });
   };
